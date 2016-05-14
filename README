@@ -1,0 +1,20 @@
+lib-bash
+========
+
+This is a standard library of sorts for shell scripting.
+
+WORK IN PROGRESS
+
+### Dependencies
+  + Build/Install
+    - Cmake
+  + Runtime
+    - Bash 4.2+
+    - GNU grep
+    - GNU sed
+    - GNU awk
+
+### Usage
+```bash
+source "$(lib-bash)"
+```

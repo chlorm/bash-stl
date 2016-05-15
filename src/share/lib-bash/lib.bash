@@ -37,6 +37,12 @@
 
 ##################################### Main #####################################
 
+set -o errexit
+set -o errtrace
+# TODO: fix remaining undeclared variables (mainly in concurrent)
+#set -o nounset
+set -o pipefail
+
 # TODO: set program name dynamically, but allow overriding with a variable
 
 #[ -n "${PROGRAM_NAME}" ]

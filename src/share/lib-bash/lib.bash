@@ -530,7 +530,6 @@ String::UpperCase.custom() {
 String::UpperCase.custom() { declare -u ${1} ; }
 String::InverseCase()  { echo ${@~~} ; }
 String::InverseCase.first()  { echo ${@~} ; }
-# TODO: support zsh
 String::Version() {
   [ $# -eq 2 ]
   if [ "${1}" == "${2}" ] ; then

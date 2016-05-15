@@ -380,7 +380,8 @@ OS::Kernel() {
   Kernel=$(
     String::LowerCase "$(OS::Kernel.proc) $(OS::Kernel.ostype) $(OS::Kernel.uname)" |
       grep --max-count 1 --only-matching --extended-regex \
-        'microsoft|cygwin|darwin|freebsd|linux'
+        'microsoft|cygwin|darwin|freebsd|linux' |
+      head -1
   )
 
   if [ "${Kernel}" == 'microsoft' ] ; then

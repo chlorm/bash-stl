@@ -29,5 +29,5 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Returns the full path to lib.bash
-echo "$(readlink -f "$(dirname "$(readlink -f "${0}")")")/../share/lib-bash/lib.bash"
+echo "$(readlink -f "$(readlink -f "$(dirname "$(readlink -f "${0}")")")/../share/lib-bash/lib.bash")"
 exit 0

@@ -135,7 +135,7 @@ usage: \$0 [OPTIONS]
 OPTIONS:
 $ArgsUsage
 
-    -h --help  :    usage
+    -h --help:      usage
 
 XXX
 }

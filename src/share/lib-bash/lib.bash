@@ -39,6 +39,7 @@
 
 set -o errexit
 set -o errtrace
+set -o functrace
 # TODO: fix remaining undeclared variables (mainly in concurrent)
 #set -o nounset
 set -o pipefail
@@ -338,6 +339,33 @@ Cpu::Logical() {
   fi
 
   echo "${CpuThreads}"
+}
+
+#################################### Debug #####################################
+
+# Print a debug message with the current function and command executed
+# Usage: add `set -o functrace` & `trap 'Debug::Message' DEBUG`
+Debug::Func() {
+  # Requires `set -o functrace` to allow traps on DEBUG & RETURN to be
+  # inherited by shell functions, command substitutions, and commands
+  # executed in a subshell environment.
+
+  if [ "${ENABLE_DEBUGGING_VERBOSE}" == 'true' ] ; then
+    echo "DEBUG: ${FUNCNAME[1]} - ${BASH_COMMAND}" > /dev/null 1>&2
+  fi
+}
+
+# Print a debug message with current function and custom message
+Debug::Func() {
+  local Message="${1}"
+
+  if [ -z "${Message}" ] ; then
+    Error::Message 'no input'
+  fi
+
+  if [ "${ENABLE_DEBUGGING}" == 'true' ] ; then
+    echo "DEBUG: ${FUNCNAME[1]} - ${Message}" > /dev/null 1>&2
+  fi
 }
 
 #################################### Error #####################################

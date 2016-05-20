@@ -356,7 +356,7 @@ Debug::Func() {
 }
 
 # Print a debug message with current function and custom message
-Debug::Func() {
+Debug::Message() {
   local Message="${1}"
 
   if [ -z "${Message}" ] ; then

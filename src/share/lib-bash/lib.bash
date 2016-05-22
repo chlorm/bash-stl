@@ -368,6 +368,36 @@ Debug::Message() {
   fi
 }
 
+################################## Directory ###################################
+
+Directory::Create() {
+  while [ "${1}" ] ; do
+    # Make sure directory is not a symlink
+    if [ -L "${1}" ] ; then
+      unlink "${1}" > /dev/null 2>&1
+    fi
+    # Create directory
+    if [ ! -d "${1}" ] ; then
+      mkdir -p "${1}" > /dev/null 2>&1
+    fi
+    shift
+  done
+}
+
+Directory::Remove() {
+  while [ "${1}" ] ; do
+    # Make sure directory is not a symlink
+    if [ -L "${1}" ] ; then
+      unlink "${1}" > /dev/null 2>&1
+    fi
+    # Remove directory
+    if [ -d "${1}" ] ; then
+      rm -rf "${1}" > /dev/null 2>&1
+    fi
+    shift
+  done
+}
+
 #################################### Error #####################################
 
 # TODO: multiple error levels, fatal/error/warn
@@ -388,6 +418,36 @@ Error::Trace() {
     echo '  File' \"${BASH_SOURCE[i+1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i+1]}
     # Print the text from the line
     sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i+1]}"
+  done
+}
+
+##################################### File #####################################
+
+File::Create() {
+  while [ "${1}" ] ; do
+    # Make sure file is not a symlink
+    if [ -L "${1}" ] ; then
+      unlink "${1}" > /dev/null 2>&1
+    fi
+    # Create file
+    if [ ! -f "${1}" ] ; then
+      touch "${1}" > /dev/null 2>&1
+    fi
+    shift
+  done
+}
+
+File::Remove() {
+  while [ "${1}" ] ; do
+    # Make sure file is not a symlink
+    if [ -L "${1}" ] ; then
+      unlink "${1}" > /dev/null 2>&1
+    fi
+    # Remove file
+    if [ -f "${1}" ] ; then
+      rm -f "${1}" > /dev/null 2>&1
+    fi
+    shift
   done
 }
 

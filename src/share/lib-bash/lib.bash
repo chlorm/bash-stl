@@ -90,71 +90,78 @@ Args::Define() {
         ;;
       'value') local val="${value}" ;;
       'variable') local variable="${value}" ;;
+      'boolean') local boolean="${value}"
     esac
   done
 
   [ -n ${variable+x} ]
   String::NotNull "${long}"
 
-  if [ -z "${val}" ] ; then
-    val="\$OPTARG"
-  fi
-
-  # Usage
+  # Usage message
   ArgsUsage="${ArgsUsage}${ArgsUsage:+#NL}    ${short} $(printf "%-12s %s" "${long}:" "${desc}")${default:+ [default:$default]}"
-
-  ArgCase="${ArgCase}#NL#TB#TB${long})#NL#TB#TB#TBparams=\"\$params ${short}\";;"
+  # Translate long options to short options
+  ArgsCaseStatements="${ArgsCaseStatements}#NL#TB#TB${long})#NL#TB#TB#TBparams=\"\$params ${short}\";;"
 
   # Default
-  if [ -n "$default" ] ; then
-    optparse_defaults="${optparse_defaults}#NL${variable}=${default}"
+  if [ -n "${default}" ] ; then
+    ArgDefaults="${ArgDefaults}#NL${variable}=${default}"
   fi
 
-  # Arguments
-  optparse_arguments_string="${optparse_arguments_string}${shortname}"
-  if [ "$val" = "\$OPTARG" ] ; then
-    optparse_arguments_string="${optparse_arguments_string}:"
-  fi
-  optparse_process="${optparse_process}#NL#TB#TB${shortname})#NL#TB#TB#TB${variable}=\"$val\";;"
+  req_input() {
+    if [ -z "${boolean}" ] && [ -n "${variable}" ] ; then
+      echo ":"
+    fi
+  }
+
+  # GetOpts arguments
+  GetOptsArgumentString="${GetOptsArgumentString} ${shortname}$(req_input)"
+  GetOptsCaseStatements="${GetOptsCaseStatements}#NL${shortname})#NL${variable}=\"\$OPTARG\";;"
 }
 
 # FIXME: if long flag is used return long flag in error message
 # FIXME: throw an error if both the short & long flag are used
+# FIXME: fix parsing of input with spaces
 Args::Build(){
+  local ArgFile
+  local -A ReplaceChars
   local TMPDIR
-  local build_file
 
   TMPDIR="$(mktemp -d)"
-  build_file="${TMPDIR}/optparse-${RANDOM}.tmp"
+  ArgFile="${TMPDIR}/optparse-${RANDOM}.tmp"
 
   # Building getopts header here
 
   # Function usage
-  cat << EOF > $build_file
-function ${PROGRAM_NAME}::Usage(){
-cat << XXX
-usage: \$0 [OPTIONS]
+  cat <<EOF > "${ArgFile}"
+local params param arg
+
+function $(Main::Name)::Usage(){
+cat <<USAGE
+usage: $(Main::Name) [OPTIONS]
 
 OPTIONS:
-$ArgsUsage
+${ArgsUsage}
 
     -h --help:      usage
 
-XXX
+USAGE
 }
 
-# Contract long options into short options
+# Translate long options to short options
 params=""
-while [ \$# -ne 0 ]; do
+while [ \$# -ne 0 ] ; do
   param="\$1" ; shift
 
   case "\$param" in
-    ${ArgCase}
-    '-h'|'--help') ${PROGRAM_NAME}::Usage ; exit 0 ;;
+    ${ArgsCaseStatements}
+    '-h'|'--help')
+      $(Main::Name)::Usage
+      exit 0
+      ;;
     *)
       if [[ "\$param" == --* ]] ; then
         echo -e "Unrecognized option: \$param"
-        usage
+        $(Main::Name)::Usage
         exit 1
       fi
       params="\$params \"\$param\""
@@ -165,38 +172,39 @@ done
 eval set -- "\$params"
 
 # Set default variable values
-$optparse_defaults
+${ArgDefaults}
 
 # Process using getopts
-while getopts "$optparse_arguments_string" option; do
-  case \$option in
+while getopts ":${GetOptsArgumentString}" arg ; do
+  case "\${arg}" in
     # Substitute actions for different variables
-    $optparse_process
-    :) echo "Option - \$OPTARG requires an argument" ; exit 1 ;;
-    *) ${PROGRAM_NAME}::Usage ; exit 1 ;;
+    ${GetOptsCaseStatements}
+    :) echo "Option - \${OPTARG} requires an argument" ; exit 1 ;;
+    *) $(Main::Name)::Usage ; exit 1 ;;
   esac
 done
 
 # Clean up after self
-rm $build_file
+rm "${ArgFile}"
 
 EOF
 
-  local -A o=( ['#NL']='\n' ['#TB']='\t' )
+  ReplaceChars=( ['#NL']='\n' ['#TB']='\t' )
 
-  for i in "${!o[@]}"; do
-    sed -i "s/${i}/${o[$i]}/g" $build_file
+  for i in "${!ReplaceChars[@]}"; do
+    sed -i "${ArgFile}" \
+      -e "s/${i}/${ReplaceChars[$i]}/g"
   done
 
   # Unset global variables
   unset ArgsUsage
-  unset optparse_process
-  unset optparse_arguments_string
-  unset optparse_defaults
-  unset ArgCase
+  unset ArgsCaseStatements
+  unset GetOptsCaseStatements
+  unset GetOptsArgumentString
+  unset ArgDefaults
 
   # Return file name to parent
-  echo "$build_file"
+  echo "${ArgFile}"
 }
 
 ##################################### CPU ######################################

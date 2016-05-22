@@ -44,11 +44,13 @@ set -o functrace
 #set -o nounset
 set -o pipefail
 
-# TODO: set program name dynamically, but allow overriding with a variable
-
-#[ -n "${PROGRAM_NAME}" ]
-
-Main::Name() { echo "${PROGRAM_NAME}" ; }
+Main::Name() {
+  if [ -n "${PROGRAM_NAME}" ] ; then
+    echo "${PROGRAM_NAME}"
+  else
+    echo "$(basename "${0}")"
+  fi
+}
 
 ################################## Arguments ###################################
 
@@ -421,9 +423,9 @@ Download::Http() {
 
 Error::Message() {
   if [ -n "${2}" ] ; then
-    echo "${PROGRAM_NAME}: ERROR in \`${2}\`: ${1}" > /dev/stderr
+    echo "$(Main::Name): ERROR in \`${2}\`: ${1}" > /dev/stderr
   else
-    echo "${PROGRAM_NAME}: ERROR in \`${FUNCNAME[1]}\`: ${1}" > /dev/stderr
+    echo "$(Main::Name): ERROR in \`${FUNCNAME[1]}\`: ${1}" > /dev/stderr
   fi
 }
 

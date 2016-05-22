@@ -653,6 +653,18 @@ String::Version.nomore() { [[ "$(String::Version "${1}" "${2}")" == +('eq'|'lt')
 String::Version.greater() { [[ "$(String::Version "${1}" "${2}")" == 'gt' ]] ; }
 String::Version.lesser() { [[ "$(String::Version "${1}" "${2}")" == 'lt' ]] ; }
 
+################################### Symlink ####################################
+
+Symlink::Create() {
+  Directory::Create "$(dirname "${2}")"
+  # Ignore if a symlink already exists and points to the correct location.
+  if [ "$(readlink -f "${2}")" != "${1}" ] ; then
+    rm -rf "${2}"
+    [ -e "${1}" ]
+    ln -sf "${1}" "${2}"
+  fi
+}
+
 ##################################### User #####################################
 
 # Determine if the user is root

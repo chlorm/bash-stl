@@ -398,6 +398,23 @@ Directory::Remove() {
   done
 }
 
+################################### Download ###################################
+
+# TODO: add support for ftp, and reduce support to either curl or wget
+
+Download::Http() {
+  if Path::Check 'curl' ; then
+    curl -sOL $@
+  elif Path::Check 'wget' ; then
+    wget $@
+  elif Path::Check 'fetch' ; then
+    fetch $@
+  else
+    Error::Message 'no supported download utility found'
+    return 1
+  fi
+}
+
 #################################### Error #####################################
 
 # TODO: multiple error levels, fatal/error/warn

@@ -468,6 +468,30 @@ File::Remove() {
   done
 }
 
+##################################### Math #####################################
+
+Math::Mode() {
+  echo "${@}" |
+    # Break string on spaces
+    sed -r 's/[[:space:]]+/\n/g' |
+    # Remove duplicates
+    uniq -c |
+    # Sort the most common first
+    sort -n -k 1 -r |
+    awk '{ print $2 ; exit }'
+}
+
+Math::Mode.count() {
+  echo "${@}" |
+    # Break string on spaces
+    sed -r 's/[[:space:]]+/\n/g' |
+    # Remove duplicates
+    uniq -c |
+    # Sort the most common first
+    sort -n -k 1 -r |
+    awk '{ print $1 ; exit }'
+}
+
 ###################################### OS ######################################
 
 # TODO: OS architecture functions

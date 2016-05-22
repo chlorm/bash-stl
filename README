@@ -24,7 +24,6 @@ set -o pipefail
 
 trap 'Debug::Func' DEBUG
 
-PROGRAM_NAME='your-prog' # <- need to get rid of this
 ENABLE_DEBUGGING='true'
 ENABLE_DEBUGGING_VERBOSE='false'
 

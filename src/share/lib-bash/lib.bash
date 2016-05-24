@@ -123,9 +123,11 @@ Args::Define() {
 # FIXME: fix parsing of input with spaces
 Args::Build(){
   local ArgFile
+  local Name
   local -A ReplaceChars
   local TMPDIR
 
+  Name="$(Main::Name)"
   TMPDIR="$(mktemp -d)"
   ArgFile="${TMPDIR}/optparse-${RANDOM}.tmp"
 
@@ -135,9 +137,9 @@ Args::Build(){
   cat <<EOF > "${ArgFile}"
 local params param arg
 
-function $(Main::Name)::Usage(){
+function ${Name}::Usage(){
 cat <<USAGE
-usage: $(Main::Name) [OPTIONS]
+usage: ${Name} [OPTIONS]
 
 OPTIONS:
 ${ArgsUsage}
@@ -155,13 +157,13 @@ while [ \$# -ne 0 ] ; do
   case "\$param" in
     ${ArgsCaseStatements}
     '-h'|'--help')
-      $(Main::Name)::Usage
+      ${Name}::Usage
       exit 0
       ;;
     *)
       if [[ "\$param" == --* ]] ; then
         echo -e "Unrecognized option: \$param"
-        $(Main::Name)::Usage
+        ${Name}::Usage
         exit 1
       fi
       params="\$params \"\$param\""
@@ -180,7 +182,7 @@ while getopts ":${GetOptsArgumentString}" arg ; do
     # Substitute actions for different variables
     ${GetOptsCaseStatements}
     :) echo "Option - \${OPTARG} requires an argument" ; exit 1 ;;
-    *) $(Main::Name)::Usage ; exit 1 ;;
+    *) ${Name}::Usage ; exit 1 ;;
   esac
 done
 

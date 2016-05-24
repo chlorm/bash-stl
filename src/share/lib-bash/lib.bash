@@ -1667,3 +1667,8 @@ concurrent() (
 
     exit ${__crt__final_status}
 )
+
+String::Version.atleast "${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}" '4.2' || {
+  Error::Message "lib-bash requires BASH 4.2+, you have: ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"
+  exit 1
+}

@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: add ensure dir/file, sudo wrap, symlink, proc, run
+# TODO: add sudo wrap, proc, run
 
 ################################# Dependencies #################################
 

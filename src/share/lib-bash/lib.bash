@@ -723,6 +723,72 @@ Symlink::Create() {
 # Determine if the user is root
 User::Root() { [ $(id -u) -eq 0 ] ; }
 
+##################################### Var ######################################
+
+Var::Type() {
+  local Var="${1}"
+
+  [ -n "${Var}" ]
+
+  if [[ ${Var} =~ ^-?[0-9]+\.[0-9]+$ ]] ; then
+    echo 'float'
+  elif [[ ${Var} =~ ^-?[0-9]+$ ]] ; then
+    echo 'integer'
+  elif [ "${Var}" == true ] || [ "${Var}" == false ] ; then
+    echo 'boolean'
+  else
+    echo 'string'
+  fi
+}
+
+Var::Type.boolean() {
+  local Type
+  local Var="${1}"
+
+  [ -n "${Var}" ]
+
+  Type="$(Var::Type "${Var}")"
+
+  [ "${Type}" == 'boolean' ] || {
+    Error::Message \
+      "Value is a ${Type}, while a boolean was expected" \
+      "${FUNCNAME[1]}"
+    return 1
+  }
+}
+
+Var::Type.float() {
+  local Type
+  local Var="${1}"
+
+  [ -n "${Var}" ]
+
+  Type="$(Var::Type "${Var}")"
+
+  [ "${Type}" == 'float' ] || {
+    Error::Message \
+      "Value is a ${Type}, while a float was expected" \
+      "${FUNCNAME[1]}"
+    return 1
+  }
+}
+
+Var::Type.integer() {
+  local Type
+  local Var="${1}"
+
+  [ -n "${Var}" ]
+
+  Type="$(Var::Type "${Var}")"
+
+  [ "${Type}" == 'integer' ] || {
+    Error::Message \
+      "Value is a ${Type}, while a integer was expected" \
+      "${FUNCNAME[1]}"
+    return 1
+  }
+}
+
 ################################## Concurrent ################################## 
 
 # Copyright (c) 2016, Matthew Tardiff

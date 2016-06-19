@@ -371,9 +371,7 @@ Debug::Func() {
 Debug::Message() {
   local Message="${1}"
 
-  if [ -z "${Message}" ] ; then
-    Error::Message 'no input'
-  fi
+  String::NotNull "${Message}"
 
   if [ "${ENABLE_DEBUGGING}" == 'true' ] ; then
     echo "DEBUG: ${FUNCNAME[1]} - ${Message}" > /dev/null 1>&2
@@ -502,6 +500,27 @@ Math::Mode.count() {
     # Sort the most common first
     sort -n -k 1 -r |
     awk '{ print $1 ; exit }'
+}
+
+Math::RoundFloat() {
+  local Float="${1}"
+
+  # Make sure not to fail if num is already an integer
+  if Var::Type.integer "${Float}" ; then
+    echo "${Float}"
+  fi
+
+  Var::Type.float "${Float}"
+
+  # Rounds float to the nearest whole number
+  FloatRounded=$(
+    printf %.0f $(
+      echo ${Float} |
+      bc -l
+    )
+  )
+
+  echo "${FloatRounded}"
 }
 
 ###################################### OS ######################################

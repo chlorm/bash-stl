@@ -374,9 +374,7 @@ Debug::Func() {
 # $2 - Message (if level is specified)
 # $3 - override name of function returned in message
 Debug::Message() {
-  local Func
-  local Level
-  local Message
+  local Func Level Message
 
   if [[ ! "${1}" == +('debug'|'info'|'warn'|'error'|'fatal') ]] ; then
     Level='info'
@@ -395,7 +393,7 @@ Debug::Message() {
   fi
 
   if [ "${ENABLE_DEBUGGING}" == 'true' ] ; then
-    echo "$(Main::Name) [${Level}] ${Func}: ${Message}" > /dev/null 1>&2
+    echo "$(Main::Name) [${Level}] ${Func}: ${Message}" 1>&2
   fi
 }
 

@@ -519,7 +519,7 @@ Math::RoundFloat() {
   local Float="${1}"
 
   # Make sure not to fail if num is already an integer
-  if Var::Type.integer "${Float}" ; then
+  if Var::Type.integer "${Float}" > /dev/null 2>&1 ; then
     echo "${Float}"
   fi
 

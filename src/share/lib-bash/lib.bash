@@ -365,20 +365,58 @@ Debug::Func() {
   # executed in a subshell environment.
 
   if [ "${ENABLE_DEBUGGING_VERBOSE}" == 'true' ] ; then
-    echo "DEBUG: ${FUNCNAME[1]} - ${BASH_COMMAND}" > /dev/null 1>&2
+    Debug::Message 'debug' "${BASH_COMMAND}" "${FUNCNAME[1]}"
   fi
 }
 
 # Print a debug message with current function and custom message
+# $1 - Level (debug,info,warn,error,fatal) or message (assumes level info)
+# $2 - Message (if level is specified)
+# $3 - override name of function returned in message
 Debug::Message() {
-  local Message="${1}"
+  local Func
+  local Level
+  local Message
+
+  if [[ ! "${1}" == +('debug'|'info'|'warn'|'error'|'fatal') ]] ; then
+    Level='info'
+    Message="${1}"
+    Func="${2}"
+  else
+    Level="${1}"
+    Message="${2}"
+    Func="${3}"
+  fi
 
   String::NotNull "${Message}"
 
+  if ! String::NotNull "${Func}" ; then
+    Func="${FUNCNAME[1]}"
+  fi
+
   if [ "${ENABLE_DEBUGGING}" == 'true' ] ; then
-    echo "DEBUG: ${FUNCNAME[1]} - ${Message}" > /dev/null 1>&2
+    echo "$(Main::Name) [${Level}] ${Func}: ${Message}" > /dev/null 1>&2
   fi
 }
+
+# Deprecated: use `Debug::Message 'error' "<message>"`
+Error::Message() {
+  Debug::Message 'error' "${1}" "${FUNCNAME[1]}"
+}
+
+Debug::Trace() {
+  local i=0
+  local x=${#BASH_LINENO[@]}
+
+  for ((i=x-2; i>=0; i--)) ; do
+    echo '  File' \"${BASH_SOURCE[i+1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i+1]}
+    # Print the text from the line
+    sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i+1]}"
+  done
+}
+
+# Deprecated: use Debug::Trace
+alias='Debug::Trace'
 
 ################################## Directory ###################################
 
@@ -412,42 +450,15 @@ Directory::Remove() {
 
 ################################### Download ###################################
 
-# TODO: add support for ftp, and reduce support to either curl or wget
+# TODO: add support for ftp
 
 Download::Http() {
   if Path::Check 'curl' ; then
     curl -sOL $@
-  elif Path::Check 'wget' ; then
-    wget $@
-  elif Path::Check 'fetch' ; then
-    fetch $@
   else
-    Error::Message 'no supported download utility found'
+    Debug::Message 'error' 'http download failed, cURL is not installed'
     return 1
   fi
-}
-
-#################################### Error #####################################
-
-# TODO: multiple error levels, fatal/error/warn
-
-Error::Message() {
-  if [ -n "${2}" ] ; then
-    echo "$(Main::Name): ERROR in \`${2}\`: ${1}" > /dev/stderr
-  else
-    echo "$(Main::Name): ERROR in \`${FUNCNAME[1]}\`: ${1}" > /dev/stderr
-  fi
-}
-
-Error::Trace() {
-  local i=0
-  local x=${#BASH_LINENO[@]}
-
-  for ((i=x-2; i>=0; i--)) ; do
-    echo '  File' \"${BASH_SOURCE[i+1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i+1]}
-    # Print the text from the line
-    sed -n "${BASH_LINENO[i]}{s/^/    /;p}" "${BASH_SOURCE[i+1]}"
-  done
 }
 
 ##################################### File #####################################
@@ -677,7 +688,7 @@ Prompt::YorN() {
 # TODO: refactor into generic functions
 String::NotNull() {
   if [ -z "${1}" ] ; then
-    Error::Message 'value is null while a string was expected' "${FUNCNAME[1]}"
+    Debug::Message 'error' 'value is null while a string was expected' "${FUNCNAME[1]}"
     return 1
   fi
 }
@@ -719,7 +730,7 @@ String::Version() {
       echo 'lt' ; return 0
     fi
   done
-  Error::Message 'version comparison failed'
+  Debug::Message 'error' 'version comparison failed'
   return 1
 }
 String::Version.atleast() { [[ "$(String::Version "${1}" "${2}")" == +('eq'|'gt') ]] ; }
@@ -771,7 +782,7 @@ Var::Type.boolean() {
   Type="$(Var::Type "${Var}")"
 
   [ "${Type}" == 'boolean' ] || {
-    Error::Message \
+    Debug::Message 'error' \
       "Value is a ${Type}, while a boolean was expected" \
       "${FUNCNAME[1]}"
     return 1
@@ -787,7 +798,7 @@ Var::Type.float() {
   Type="$(Var::Type "${Var}")"
 
   [ "${Type}" == 'float' ] || {
-    Error::Message \
+    Debug::Message 'error' \
       "Value is a ${Type}, while a float was expected" \
       "${FUNCNAME[1]}"
     return 1
@@ -803,7 +814,7 @@ Var::Type.integer() {
   Type="$(Var::Type "${Var}")"
 
   [ "${Type}" == 'integer' ] || {
-    Error::Message \
+    Debug::Message 'error' \
       "Value is a ${Type}, while a integer was expected" \
       "${FUNCNAME[1]}"
     return 1
@@ -863,7 +874,7 @@ concurrent() (
     #
 
     if [[ -z "${BASH_VERSINFO[@]}" || "${BASH_VERSINFO[0]}" -lt 4 || "${BASH_VERSINFO[1]}" -lt 2 ]]; then
-      Error::Message "Requires Bash version 4.2 for 'declare -g' (you have ${BASH_VERSION:-a different shell})"
+      Debug::Message 'error' "Requires Bash version 4.2 for 'declare -g' (you have ${BASH_VERSION:-a different shell})"
     fi
 
     __crt__unset_env() {
@@ -952,7 +963,7 @@ concurrent() (
           return
         fi
       done
-      Error::Message "Failed to find task named '${name}'"
+      Debug::Message 'error' "Failed to find task named '${name}'"
     }
 
     __crt__is_task_allowed_to_start() {
@@ -1263,9 +1274,9 @@ concurrent() (
     __crt__args__handle_task_flag() {
         set -- "${remaining_args[@]}"
 
-        shift; (( $# )) || Error::Message "expected task name after '-'"
+        shift; (( $# )) || Debug::Message 'error' "expected task name after '-'"
         __crt__names+=("${1}")
-        shift; (( $# )) || Error::Message "expected command after task name"
+        shift; (( $# )) || Debug::Message 'error' "expected command after task name"
         local args=()
         while (( $# )) && ! __crt__args__is_flag_starting_section "${1}"; do
             args+=("${1}")
@@ -1299,7 +1310,7 @@ concurrent() (
         local before
 
         while (( $# )) && __crt__args__is_require_flag "${1}"; do
-            shift; (( $# )) || Error::Message "expected task name after '--require'"
+            shift; (( $# )) || Debug::Message 'error' "expected task name after '--require'"
             require=(${require[@]} $(__crt__name_index "${1}"))
             shift
         done
@@ -1313,16 +1324,16 @@ concurrent() (
             done
         elif __crt__args__is_before_flag "${1}"; then
             while (( $# )) && __crt__args__is_before_flag "${1}"; do
-                shift; (( $# )) || Error::Message "expected task name after '--before'"
+                shift; (( $# )) || Debug::Message 'error' "expected task name after '--before'"
                 before=$(__crt__name_index "${1}")
                 shift
                 if __crt__args__is_item_in_array "${before}" "require"; then
-                    Error::Message "task cannot require itself"
+                    Debug::Message 'error' "task cannot require itself"
                 fi
                 declare -g -a "__crt__prereqs_${before}=(\${__crt__prereqs_${before}[@]} \${require[@]})"
             done
         else
-            Error::Message "expected '--before' or '--before-all' after '--require-all'"
+            Debug::Message 'error' "expected '--before' or '--before-all' after '--require-all'"
         fi
 
         remaining_args=("${@}")
@@ -1341,7 +1352,7 @@ concurrent() (
         elif __crt__args__is_before_flag "${1}"; then
             before=()
             while (( $# )) && __crt__args__is_before_flag "${1}"; do
-                shift; (( $# )) || Error::Message "expected task name after '--before'"
+                shift; (( $# )) || Debug::Message 'error' "expected task name after '--before'"
                 before=(${before[@]} $(__crt__name_index "${1}"))
                 shift
             done
@@ -1351,7 +1362,7 @@ concurrent() (
                 declare -g -a "__crt__prereqs_${b}=(\${require[@]})"
             done
         else
-            Error::Message "expected '--before' or '--before-all' after '--require-all'"
+            Debug::Message 'error' "expected '--before' or '--before-all' after '--require-all'"
         fi
 
         remaining_args=("${@}")
@@ -1412,7 +1423,7 @@ concurrent() (
         while true; do
             start_allowed_tasks
             [[ "${#__crt__pending[@]}" != 0 ]] || break
-            [[ "${tasks_started}" -gt 0 ]] || Error::Message "detected requirement loop"
+            [[ "${tasks_started}" -gt 0 ]] || Debug::Message 'error' "detected requirement loop"
         done
     )
 
@@ -1431,7 +1442,7 @@ concurrent() (
             elif __crt__args__is_sequential_flag "${remaining_args[0]}"; then
                 __crt__args__handle_sequential_flag
             else
-                Error::Message "unexpected argument '${remaining_args[0]}'"
+                Debug::Message 'error' "unexpected argument '${remaining_args[0]}'"
             fi
         done
 
@@ -1739,7 +1750,7 @@ concurrent() (
     export CONCURRENT_LOG_DIR=${CONCURRENT_LOG_DIR:-${PWD}/.logs/$(date +'%F@%T')}
     #mkdir -p "${CONCURRENT_LOG_DIR}"
 
-    __crt__disable_echo || Error::Message 'Must be run in the foreground of an interactive shell!'
+    __crt__disable_echo || Debug::Message 'error' 'Must be run in the foreground of an interactive shell!'
     __crt__status_dir=$(mktemp -d "${TMPDIR:-/tmp}/concurrent.lib.sh.XXXXXXXXXXX")
     __crt__event_pipe="${__crt__status_dir}/event-pipe"
     __crt__clear_event_pipe
@@ -1756,6 +1767,6 @@ concurrent() (
 )
 
 String::Version.atleast "${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}" '4.2' || {
-  Error::Message "lib-bash requires BASH 4.2+, you have: ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"
+  Debug::Message 'error' "lib-bash requires BASH 4.2+, you have: ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"
   exit 1
 }

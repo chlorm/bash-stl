@@ -610,7 +610,11 @@ Path::Add() {
 # Remove directory from $PATH
 Path::Remove() {
   if [ -n "$(echo "${PATH}" | grep "${1}" 2> /dev/null)" ] ; then
-    export PATH=`echo -n $PATH | awk -v RS=: -v ORS=: '$0 != "'$1'"' | sed 's/:$//'`
+    export PATH="$(
+      echo -n $PATH |
+        awk -v RS=: -v ORS=: '$0 != "'$1'"' |
+        sed 's/:$//'
+      )"
   fi
 }
 

@@ -31,7 +31,9 @@
 ################################# Dependencies #################################
 
 # Bash 4.2+
+# cURL
 # GNU awk
+# GNU bc
 # GNU grep
 # GNU sed
 

@@ -687,7 +687,7 @@ Prompt::YorN() {
 # TODO: refactor into generic functions
 String::NotNull() {
   if [ -z "${1}" ] ; then
-    Debug::Message 'error' 'value is null while a string was expected' "${FUNCNAME[1]}"
+    Debug::Message 'error' 'value is null while a string was expected' "${FUNCNAME[2]}"
     return 1
   fi
 }

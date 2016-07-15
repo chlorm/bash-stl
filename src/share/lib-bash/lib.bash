@@ -123,7 +123,7 @@ Args::Define() {
 # FIXME: if long flag is used return long flag in error message
 # FIXME: throw an error if both the short & long flag are used
 # FIXME: fix parsing of input with spaces
-Args::Build(){
+Args::Build() {
   local ArgFile
   local Name
   local -A ReplaceChars
@@ -374,32 +374,23 @@ Debug::Func() {
 # $2 - Message (if level is specified)
 # $3 - override name of function returned in message
 Debug::Message() {
-  local Func Level Message
+  local Func="${3}"
+  local Level="${1}"
+  local Message="${2}"
 
-  if [[ ! "${1}" == +('debug'|'info'|'warn'|'error'|'fatal') ]] ; then
-    Level='info'
-    Message="${1}"
-    Func="${2}"
-  else
-    Level="${1}"
-    Message="${2}"
-    Func="${3}"
+  if [[ ! "${Level}" == +('debug'|'info'|'warn'|'error'|'fatal') ]] ; then
+    echo "$(Main::Name) [error] ${FUNCNAME}: invalid debug level: ${Level}" 1>&2
   fi
 
   String::NotNull "${Message}"
 
-  if ! String::NotNull "${Func}" ; then
+  if ! String::NotNull "${Func}" 2> /dev/null ; then
     Func="${FUNCNAME[1]}"
   fi
 
   if [ "${ENABLE_DEBUGGING}" == 'true' ] ; then
     echo "$(Main::Name) [${Level}] ${Func}: ${Message}" 1>&2
   fi
-}
-
-# Deprecated: use `Debug::Message 'error' "<message>"`
-Error::Message() {
-  Debug::Message 'error' "${1}" "${FUNCNAME[1]}"
 }
 
 Debug::Trace() {

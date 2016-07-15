@@ -57,7 +57,7 @@ Main::Name() {
 ################################## Arguments ###################################
 
 # FIXME: add support for using arrays instead of variables (prepend/append)
-# FIXME: add required boolean (if flag must be set)
+# FIXME: add required boolean (if flag must be passed)
 
 # Options:
 # short       - 'short=<flag>' (e.g. -f)

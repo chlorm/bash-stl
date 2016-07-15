@@ -616,8 +616,7 @@ Path::Bin.abs() {
   for PossiblePath in ${PATH} ; do
     PossiblePath="$(readlink -f "${PossiblePath}/${1}")"
     if test -e "${PossiblePath}" ; then
-      echo "${PossiblePath}"
-      return 0
+      echo "${PossiblePath}" ; return 0
     fi
   done
 
@@ -723,6 +722,7 @@ String::Version.lesser() { [[ "$(String::Version "${1}" "${2}")" == 'lt' ]] ; }
 
 ################################### Symlink ####################################
 
+# Create a symlink from $1 -> $2
 Symlink::Create() {
   Directory::Create "$(dirname "${2}")"
   # Ignore if a symlink already exists and points to the correct location.

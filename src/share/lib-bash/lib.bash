@@ -637,12 +637,10 @@ Prompt::PasswordConfirmation() {
     if [ "${Pass1}" == "${Pass2}" ] ; then
       break
     fi
-    echo "WARNING: passwords do not match, try again"
+    Debug::Message 'warn' 'passwords do not match, try again'
   done
 
   echo "${Pass1}" > /dev/null 2>&1
-
-  return 0
 }
 
 # Ask a yes or no question

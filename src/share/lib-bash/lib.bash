@@ -625,7 +625,7 @@ Path::Bin.abs() {
 }
 
 # Test to see if a binary exists in the path
-Path::Check() { type "${1}" 1>&2 ; }
+Path::Check() { type "${1}" > /dev/null 2>&1 ; }
 
 #################################### Prompt ####################################
 

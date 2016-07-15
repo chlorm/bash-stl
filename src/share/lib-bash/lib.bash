@@ -75,8 +75,8 @@ Args::Define() {
     key="$(echo ${option} | awk -F'=' '{print $1}')"
     value="$(echo ${option} | awk -F'=' '{print $2}')"
 
-    String::NotNull "${key}"
-    String::NotNull "${value}"
+    Var::Type.string "${key}"
+    Var::Type.string "${value}"
 
     case "${key}" in
       'default') local default="${value}" ;;
@@ -97,7 +97,7 @@ Args::Define() {
   done
 
   [ -n ${variable+x} ]
-  String::NotNull "${long}"
+  Var::Type.string "${long}"
 
   # Usage message
   ArgsUsage="${ArgsUsage}${ArgsUsage:+#NL}    ${short} $(printf "%-12s %s" "${long}:" "${desc}")${default:+ [default:$default]}"
@@ -237,7 +237,7 @@ Cpu::Architecture() {
       ;;
   esac
 
-  String::NotNull "${Architecture}"
+  Var::Type.string "${Architecture}"
 
   echo "${Architecture}"
 }
@@ -251,7 +251,7 @@ Cpu::AddressSpace() {
       grep --max-count 1 --only-matching --extended-regex '8|16|32|64|128'
   )
 
-  String::NotNull "${AddressSpace}"
+  Var::Type.string "${AddressSpace}"
 
   echo "${AddressSpace}"
 }
@@ -382,9 +382,9 @@ Debug::Message() {
     echo "$(Main::Name) [error] ${FUNCNAME}: invalid debug level: ${Level}" 1>&2
   fi
 
-  String::NotNull "${Message}"
+  Var::Type.string "${Message}"
 
-  if ! String::NotNull "${Func}" 2> /dev/null ; then
+  if ! Var::Type.string "${Func}" 2> /dev/null ; then
     Func="${FUNCNAME[1]}"
   fi
 
@@ -553,7 +553,7 @@ OS::Kernel() {
     Kernel='windows'
   fi
 
-  String::NotNull "${Kernel}"
+  Var::Type.string "${Kernel}"
 
   echo "${Kernel}"
 }
@@ -578,7 +578,7 @@ OS::Linux() {
       head -1
   )"
 
-  String::NotNull "${Linux}"
+  Var::Type.string "${Linux}"
 
   echo "${Linux}"
 }
@@ -675,13 +675,6 @@ Prompt::YorN() {
 
 #################################### String ####################################
 
-# TODO: refactor into generic functions
-String::NotNull() {
-  if [ -z "${1}" ] ; then
-    Debug::Message 'error' 'value is null while a string was expected' "${FUNCNAME[2]}"
-    return 1
-  fi
-}
 String::LowerCase() { echo ${@,,} ; }
 String::LowerCase.left() { echo ${@,} ; }
 String::LowerCase.custom() {
@@ -747,6 +740,7 @@ User::Root() { [ $(id -u) -eq 0 ] ; }
 
 ##################################### Var ######################################
 
+# Detects variable type
 Var::Type() {
   local Var="${1}"
 
@@ -758,11 +752,14 @@ Var::Type() {
     echo 'integer'
   elif [ "${Var}" == true ] || [ "${Var}" == false ] ; then
     echo 'boolean'
-  else
+  elif [ ! -z "${Var}" ] ; then
     echo 'string'
+  else
+    echo 'null'
   fi
 }
 
+# Detects if variable type is boolean
 Var::Type.boolean() {
   local Type
   local Var="${1}"
@@ -779,6 +776,7 @@ Var::Type.boolean() {
   }
 }
 
+# Detects if variable type is floating point
 Var::Type.float() {
   local Type
   local Var="${1}"
@@ -795,6 +793,7 @@ Var::Type.float() {
   }
 }
 
+# Detects if variable type is integer
 Var::Type.integer() {
   local Type
   local Var="${1}"
@@ -806,6 +805,40 @@ Var::Type.integer() {
   [ "${Type}" == 'integer' ] || {
     Debug::Message 'error' \
       "Value is a ${Type}, while a integer was expected" \
+      "${FUNCNAME[1]}"
+    return 1
+  }
+}
+
+# Detects if variable type is null
+Var::Type.null() {
+  local Type
+  local Var="${1}"
+
+  [ -n "${Var}" ]
+
+  Type="$(Var::Type "${Var}")"
+
+  [ "${Type}" == 'null' ] || {
+    Debug::Message 'error' \
+      "Value is a ${Type}, while null was expected" \
+      "${FUNCNAME[1]}"
+    return 1
+  }
+}
+
+# Detects if variable type is string
+Var::Type.string() {
+  local Type
+  local Var="${1}"
+
+  [ -n "${Var}" ]
+
+  Type="$(Var::Type "${Var}")"
+
+  [ "${Type}" != 'null' ] || {
+    Debug::Message 'error' \
+      "Value is a ${Type}, while string was expected" \
       "${FUNCNAME[1]}"
     return 1
   }

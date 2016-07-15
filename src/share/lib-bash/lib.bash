@@ -413,20 +413,17 @@ Debug::Trace() {
   done
 }
 
-# Deprecated: use Debug::Trace
-alias='Debug::Trace'
-
 ################################## Directory ###################################
 
 Directory::Create() {
   while [ "${1}" ] ; do
     # Make sure directory is not a symlink
     if [ -L "${1}" ] ; then
-      unlink "${1}" > /dev/null 2>&1
+      unlink "${1}" 1>&2
     fi
     # Create directory
     if [ ! -d "${1}" ] ; then
-      mkdir -p "${1}" > /dev/null 2>&1
+      mkdir -p "${1}" 1>&2
     fi
     shift
   done
@@ -436,11 +433,11 @@ Directory::Remove() {
   while [ "${1}" ] ; do
     # Make sure directory is not a symlink
     if [ -L "${1}" ] ; then
-      unlink "${1}" > /dev/null 2>&1
+      unlink "${1}" 1>&2
     fi
     # Remove directory
     if [ -d "${1}" ] ; then
-      rm -rf "${1}" > /dev/null 2>&1
+      rm -rf "${1}" 1>&2
     fi
     shift
   done
@@ -465,11 +462,11 @@ File::Create() {
   while [ "${1}" ] ; do
     # Make sure file is not a symlink
     if [ -L "${1}" ] ; then
-      unlink "${1}" > /dev/null 2>&1
+      unlink "${1}" 1>&2
     fi
     # Create file
     if [ ! -f "${1}" ] ; then
-      touch "${1}" > /dev/null 2>&1
+      touch "${1}" 1>&2
     fi
     shift
   done
@@ -479,11 +476,11 @@ File::Remove() {
   while [ "${1}" ] ; do
     # Make sure file is not a symlink
     if [ -L "${1}" ] ; then
-      unlink "${1}" > /dev/null 2>&1
+      unlink "${1}" 1>&2
     fi
     # Remove file
     if [ -f "${1}" ] ; then
-      rm -f "${1}" > /dev/null 2>&1
+      rm -f "${1}" 1>&2
     fi
     shift
   done
@@ -517,7 +514,7 @@ Math::RoundFloat() {
   local Float="${1}"
 
   # Make sure not to fail if num is already an integer
-  if Var::Type.integer "${Float}" > /dev/null 2>&1 ; then
+  if Var::Type.integer "${Float}" 2>&- ; then
     echo "${Float}"
   fi
 
@@ -544,11 +541,11 @@ Math::RoundFloat() {
 
 #OS::Endianness
 
-OS::Kernel.proc() { cat /proc/version 2> /dev/null ; }
+OS::Kernel.proc() { cat /proc/version 2>&- ; }
 
-OS::Kernel.ostype() { echo "${OSTYPE}" > /dev/null 2>&1 ; }
+OS::Kernel.ostype() { echo "${OSTYPE}" 2>&- ; }
 
-OS::Kernel.uname() { uname -s 2> /dev/null ; }
+OS::Kernel.uname() { uname -s 2>&- ; }
 
 # Find host os kernel
 OS::Kernel() {
@@ -571,11 +568,11 @@ OS::Kernel() {
 }
 
 # Find linux distro via /etc/*-release
-OS::Linux.release() { cat ${ROOT}/etc/*-release 2>/dev/null ; }
+OS::Linux.release() { cat ${ROOT}/etc/*-release 2>&- ; }
 # Find linux distro via uname -a
-OS::Linux.uname() { uname -a 2>/dev/null ; }
+OS::Linux.uname() { uname -a 2>&- ; }
 # Find linux distro via linux standard base
-OS::Linux.lsb() { lsb_release -a 2>/dev/null ; }
+OS::Linux.lsb() { lsb_release -a 2>&- ; }
 # Take first result of linux os name match
 OS::Linux() {
   [ "$(OS::Kernel)" == 'linux' ]
@@ -600,14 +597,14 @@ OS::Linux() {
 # Add direcory to $PATH
 Path::Add() {
   [ -d "${1}" ]
-  if [ -z "$(echo "${PATH}" | grep "${1}" 2> /dev/null)" ] ; then
+  if [ -z "$(echo "${PATH}" | grep "${1}" 2>&-)" ] ; then
     export PATH="${PATH}:${1}"
   fi
 }
 
 # Remove directory from $PATH
 Path::Remove() {
-  if [ -n "$(echo "${PATH}" | grep "${1}" 2> /dev/null)" ] ; then
+  if [ -n "$(echo "${PATH}" | grep "${1}" 2>&-)" ] ; then
     export PATH="$(
       echo -n $PATH |
         awk -v RS=: -v ORS=: '$0 != "'$1'"' |
@@ -637,7 +634,7 @@ Path::Bin.abs() {
 }
 
 # Test to see if a binary exists in the path
-Path::Check() { type "${1}" > /dev/null 2>&1 ; }
+Path::Check() { type "${1}" 1>&2 ; }
 
 #################################### Prompt ####################################
 
@@ -868,7 +865,7 @@ concurrent() (
     #
 
     __crt__hide_failure() {
-      "${@}" 2> /dev/null || :
+      "${@}" 2>&- || :
     }
 
     #

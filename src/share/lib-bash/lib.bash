@@ -605,7 +605,7 @@ Path::Remove() {
 
 # Finds the path to the binary
 # TODO: print $3+ in case of paths with spaces
-Path::Bin() { type -P "${1}" | awk '{ print $3 ; exit }' ; }
+Path::Bin() { type -P "${1}" ; }
 
 # Resolves the absolute path of a binary
 Path::Bin.abs() {

@@ -42,7 +42,7 @@
 set -o errexit
 set -o errtrace
 set -o functrace
-set -o nounset
+#set -o nounset
 set -o pipefail
 
 Main::Name() {
@@ -558,7 +558,7 @@ OS::Kernel() {
 }
 
 # Find linux distro via /etc/*-release
-OS::Linux.release() { cat ${ROOT}/etc/*-release 2>&- ; }
+OS::Linux.release() { cat ${ROOT:-}/etc/*-release 2>&- ; }
 # Find linux distro via uname -a
 OS::Linux.uname() { uname -a 2>&- ; }
 # Find linux distro via linux standard base
@@ -880,7 +880,7 @@ Var::Type.string() {
 #   has a limit for how many arguments a function can except.  Support for
 #   passing arguments as a file would circumvent this behavior.
 
-set +o nounset
+#set +o nounset
 
 concurrent() (
     #
@@ -1788,7 +1788,7 @@ concurrent() (
     exit ${__crt__final_status}
 )
 
-set -o nounset
+#set -o nounset
 
 ################################################################################
 

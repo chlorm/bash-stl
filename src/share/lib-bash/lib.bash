@@ -42,8 +42,7 @@
 set -o errexit
 set -o errtrace
 set -o functrace
-# TODO: fix remaining undeclared variables (mainly in concurrent)
-#set -o nounset
+set -o nounset
 set -o pipefail
 
 Main::Name() {
@@ -880,6 +879,8 @@ Var::Type.string() {
 #   Concurent currently fails if to many arguments a passed at once because Bash
 #   has a limit for how many arguments a function can except.  Support for
 #   passing arguments as a file would circumvent this behavior.
+
+set +o nounset
 
 concurrent() (
     #
@@ -1787,6 +1788,11 @@ concurrent() (
     exit ${__crt__final_status}
 )
 
+set -o nounset
+
+################################################################################
+
+# Make sure BASH meets version requirements
 String::Version.atleast "${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}" '4.2' || {
   Debug::Message 'error' "lib-bash requires BASH 4.2+, you have: ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"
   exit 1

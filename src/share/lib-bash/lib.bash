@@ -895,10 +895,6 @@ concurrent() (
     # Compatibility Check
     #
 
-    if [[ -z "${BASH_VERSINFO[@]}" || "${BASH_VERSINFO[0]}" -lt 4 || "${BASH_VERSINFO[1]}" -lt 2 ]]; then
-      Debug::Message 'error' "Requires Bash version 4.2 for 'declare -g' (you have ${BASH_VERSION:-a different shell})"
-    fi
-
     __crt__unset_env() {
         # Unset all concurrent-related configuration environment variables.
         unset CONCURRENT_DRY_RUN

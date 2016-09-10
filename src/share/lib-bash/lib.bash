@@ -250,7 +250,7 @@ Cpu::AddressSpace() {
       grep --max-count 1 --only-matching --extended-regex '8|16|32|64|128'
   )
 
-  Var::Type.string "${AddressSpace}"
+  Var::Type.integer "${AddressSpace}"
 
   echo "${AddressSpace}"
 }

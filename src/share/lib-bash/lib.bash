@@ -358,7 +358,7 @@ Debug::Message() {
   local Level="${1}"
   local Message="${2}"
 
-  if [[ ! "${Level}" == +('debug'|'info'|'warn'|'error'|'fatal') ]] ; then
+  if [[ ! "${Level}" == @('debug'|'info'|'warn'|'error'|'fatal') ]] ; then
     echo "$(Main::Name) [error] ${FUNCNAME}: invalid debug level: ${Level}" 1>&2
   fi
 
@@ -693,8 +693,8 @@ String::Version() {
   Debug::Message 'error' 'version comparison failed'
   return 1
 }
-String::Version.atleast() { [[ "$(String::Version "${1}" "${2}")" == +('eq'|'gt') ]] ; }
-String::Version.nomore() { [[ "$(String::Version "${1}" "${2}")" == +('eq'|'lt') ]] ; }
+String::Version.atleast() { [[ "$(String::Version "${1}" "${2}")" == @('eq'|'gt') ]] ; }
+String::Version.nomore() { [[ "$(String::Version "${1}" "${2}")" == @('eq'|'lt') ]] ; }
 String::Version.greater() { [[ "$(String::Version "${1}" "${2}")" == 'gt' ]] ; }
 String::Version.lesser() { [[ "$(String::Version "${1}" "${2}")" == 'lt' ]] ; }
 

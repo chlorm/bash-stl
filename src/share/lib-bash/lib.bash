@@ -260,14 +260,10 @@ Cpu::Sockets() {
 
   case "$(OS::Kernel)" in
     'darwin') Sockets=1 ;;
-    'linux')
-      Sockets="$(
-        lscpu |
-          grep --max-count 1 'Socket(s):' |
-          grep --only-matching --perl-regexp "[0-9]+"
-      )"
-      ;;
+    'linux') Sockets="$(lscpu | grep --max-count 1 'Socket(s):')" ;;
   esac
+
+  Sockets="${Sockets//[^0-9]/}"
 
   if [ ! ${Sockets} -ge 1 ] ; then
     # Assume a socket exists even if it fails to find any
@@ -285,27 +281,12 @@ Cpu::Physical() {
   local CpuCores
 
   case "$(OS::Kernel)" in
-    'linux')
-      CpuCores=$(
-        lscpu |
-          grep --max-count 1 'Core(s) per socket:' |
-          grep --only-matching --perl-regexp '[0-9]+'
-      )
-      ;;
-    'darwin')
-      CpuCores=$(
-        sysctl hw |
-          grep --max-count 1 'hw.physicalcpu:' |
-          grep --only-matching --perl-regexp '[0-9]+'
-      )
-      ;;
-    'cygwin')
-      CpuCores=$(
-        NUMBER_OF_PROCESSORS |
-          grep --only-matching --perl-regexp '[0-9]+'
-      )
-      ;;
+    'linux') CpuCores=$(lscpu | grep --max-count 1 'Core(s) per socket:') ;;
+    'darwin') CpuCores=$(sysctl hw | grep --max-count 1 'hw.physicalcpu:') ;;
+    'cygwin') CpuCores=$(NUMBER_OF_PROCESSORS) ;;
   esac
+
+  CpuCores="${CpuCores//[^0-9]/}"
 
   if [ -z "${CpuCores}" ] ; then
     CpuCores=1

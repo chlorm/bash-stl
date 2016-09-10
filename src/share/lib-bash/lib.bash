@@ -841,7 +841,7 @@ Var::Type.string() {
   }
 }
 
-################################## Concurrent ################################## 
+################################## Concurrent ##################################
 
 # Copyright (c) 2016, Matthew Tardiff
 # All rights reserved.
@@ -908,7 +908,7 @@ concurrent() (
             local namespace="__crt__"
         fi
         # shellcheck disable=SC2046
-        unset -f $(compgen -A function "${namespace}")
+        ###unset -f $(compgen -A function "${namespace}")
         # shellcheck disable=SC2046
         unset $(compgen -v "${namespace}")
     }
@@ -1073,10 +1073,14 @@ concurrent() (
 
         if [[ -z "${__crt__codes[${index}]}" ]]; then
             (( __crt__running_task_count-- )) || :
-            if   [[ "${code}" == '0'    ]]; then (( __crt__success_task_count++ ))     || :
-            elif [[ "${code}" == 'skip' ]]; then (( __crt__skipped_task_count++ ))     || :
-            elif [[ "${code}" == 'int'  ]]; then (( __crt__interrupted_task_count++ )) || :
-            else                                 (( __crt__failure_task_count++ ))     || :
+            if [[ "${code}" == '0'    ]]; then
+              (( __crt__success_task_count++ )) || :
+            elif [[ "${code}" == 'skip' ]]; then
+              (( __crt__skipped_task_count++ )) || :
+            elif [[ "${code}" == 'int'  ]]; then
+              (( __crt__interrupted_task_count++ )) || :
+            else
+              (( __crt__failure_task_count++ )) || :
             fi
         fi
     }
@@ -1110,7 +1114,8 @@ concurrent() (
 
     __crt__skip_task() {
         __crt__mark_task_as_started "${1}"
-        echo "[SKIPPED] Prereq '${2}' failed or was skipped" > "${__crt__status_dir}/${1}"
+        echo "[SKIPPED] Prereq '${2}' failed or was skipped" > \
+          "${__crt__status_dir}/${1}"
         __crt__mark_task_with_code "${1}" skip
     }
 
@@ -1244,7 +1249,9 @@ concurrent() (
 
     __crt__args__task_delimiter=${1}
 
-    __crt__args__is_task_flag()        { [[ "${1}" == "${__crt__args__task_delimiter}" ]]; }
+    __crt__args__is_task_flag()        {
+      [[ "${1}" == "${__crt__args__task_delimiter}" ]]
+    }
     __crt__args__is_group_flag()       { [[ "${1}" == "--and-then"    ]]; }
     __crt__args__is_require_flag()     { [[ "${1}" == "--require"     ]]; }
     __crt__args__is_require_all_flag() { [[ "${1}" == "--require-all" ]]; }
@@ -1276,7 +1283,9 @@ concurrent() (
         local i
 
         for (( i = 0; i < __crt__task_count; i++ )); do
-            __crt__args__is_item_in_array "${i}" "${these_tasks}" || other_tasks=(${other_tasks[@]} ${i})
+            __crt__args__is_item_in_array "${i}" "${these_tasks}" || {
+              other_tasks=(${other_tasks[@]} ${i})
+            }
         done
 
         __crt__args__fn_result=("${other_tasks[@]}")
@@ -1294,7 +1303,9 @@ concurrent() (
 
         shift; (( $# )) || Debug::Message 'error' "expected task name after '-'"
         __crt__names+=("${1}")
-        shift; (( $# )) || Debug::Message 'error' "expected command after task name"
+        shift; (( $# )) || {
+          Debug::Message 'error' "expected command after task name"
+        }
         local args=()
         while (( $# )) && ! __crt__args__is_flag_starting_section "${1}"; do
             args+=("${1}")
@@ -1328,21 +1339,26 @@ concurrent() (
         local before
 
         while (( $# )) && __crt__args__is_require_flag "${1}"; do
-            shift; (( $# )) || Debug::Message 'error' "expected task name after '--require'"
+            shift; (( $# )) || {
+              Debug::Message 'error' "expected task name after '--require'"
+            }
             require=(${require[@]} $(__crt__name_index "${1}"))
             shift
         done
 
         if __crt__args__is_before_all_flag "${1}"; then
             shift
-            __crt__args__get_tasks_not_in 'require'; before=("${__crt__args__fn_result[@]}")
+            __crt__args__get_tasks_not_in 'require'
+            before=("${__crt__args__fn_result[@]}")
             local b
             for b in "${before[@]}"; do
                 declare -g -a "__crt__prereqs_${b}=(\${require[@]})"
             done
         elif __crt__args__is_before_flag "${1}"; then
             while (( $# )) && __crt__args__is_before_flag "${1}"; do
-                shift; (( $# )) || Debug::Message 'error' "expected task name after '--before'"
+                shift; (( $# )) || {
+                  Debug::Message 'error' "expected task name after '--before'"
+                }
                 before=$(__crt__name_index "${1}")
                 shift
                 if __crt__args__is_item_in_array "${before}" "require"; then
@@ -1351,7 +1367,8 @@ concurrent() (
                 declare -g -a "__crt__prereqs_${before}=(\${__crt__prereqs_${before}[@]} \${require[@]})"
             done
         else
-            Debug::Message 'error' "expected '--before' or '--before-all' after '--require-all'"
+            Debug::Message 'error' \
+              "expected '--before' or '--before-all' after '--require-all'"
         fi
 
         remaining_args=("${@}")
@@ -1370,17 +1387,21 @@ concurrent() (
         elif __crt__args__is_before_flag "${1}"; then
             before=()
             while (( $# )) && __crt__args__is_before_flag "${1}"; do
-                shift; (( $# )) || Debug::Message 'error' "expected task name after '--before'"
+                shift; (( $# )) || {
+                  Debug::Message 'error' "expected task name after '--before'"
+                }
                 before=(${before[@]} $(__crt__name_index "${1}"))
                 shift
             done
-            __crt__args__get_tasks_not_in 'before'; require=("${__crt__args__fn_result[@]}")
+            __crt__args__get_tasks_not_in 'before'
+            require=("${__crt__args__fn_result[@]}")
             local b
             for b in "${before[@]}"; do
                 declare -g -a "__crt__prereqs_${b}=(\${require[@]})"
             done
         else
-            Debug::Message 'error' "expected '--before' or '--before-all' after '--require-all'"
+            Debug::Message 'error' \
+              "expected '--before' or '--before-all' after '--require-all'"
         fi
 
         remaining_args=("${@}")
@@ -1441,7 +1462,9 @@ concurrent() (
         while true; do
             start_allowed_tasks
             [[ "${#__crt__pending[@]}" != 0 ]] || break
-            [[ "${tasks_started}" -gt 0 ]] || Debug::Message 'error' "detected requirement loop"
+            [[ "${tasks_started}" -gt 0 ]] || {
+              Debug::Message 'error' "detected requirement loop"
+            }
         done
     )
 
@@ -1552,17 +1575,24 @@ concurrent() (
             __crt__move_cursor_to_index "${index}"
             __crt__draw_task "${code}"
             __crt__move_cursor_below_tasks
-            [[ "${code}" == "running" ]] || __crt__draw_recent_verbose_task "${index}" "${code}"
+            [[ "${code}" == "running" ]] || {
+              __crt__draw_recent_verbose_task "${index}" "${code}"
+            }
             __crt__move_cursor_to_top
         }
 
         __crt__draw_task() {
             local code=${1}
-            if   [[ "${code}" == "int"     ]]; then printf "${__crt__txtred}%c${__crt__txtrst}" '!'
-            elif [[ "${code}" == "skip"    ]]; then printf "${__crt__txtylw}%c${__crt__txtrst}" '-'
-            elif [[ "${code}" == "running" ]]; then printf "${__crt__txtblu}%c${__crt__txtrst}" '>'
-            elif [[ "${code}" == "0"       ]]; then printf '.'
-            else                                    printf "${__crt__txtred}%c${__crt__txtrst}" 'X'
+            if   [[ "${code}" == "int"     ]]; then
+              printf "${__crt__txtred}%c${__crt__txtrst}" '!'
+            elif [[ "${code}" == "skip"    ]]; then
+              printf "${__crt__txtylw}%c${__crt__txtrst}" '-'
+            elif [[ "${code}" == "running" ]]; then
+              printf "${__crt__txtblu}%c${__crt__txtrst}" '>'
+            elif [[ "${code}" == "0"       ]]; then
+              printf '.'
+            else
+              printf "${__crt__txtred}%c${__crt__txtrst}" 'X'
             fi
         }
 
@@ -1570,13 +1600,18 @@ concurrent() (
             local index=${1}
             local code=${2}
             local meta=${__crt__meta[${index}]}
-            if   [[ "${code}" == "int"     ]]; then printf "\n ${__crt__txtred}%s${__crt__txtrst} " 'SIGINT'
-            elif [[ "${code}" == "skip"    ]]; then printf "\n ${__crt__txtylw}%s${__crt__txtrst} " ' SKIP '
-            elif [[ "${code}" == "0"       ]]; then printf "\n ${__crt__txtgrn}%s${__crt__txtrst} " '  OK  '
-            else                                    printf "\n ${__crt__txtred}%s${__crt__txtrst} " 'FAILED'
+            if   [[ "${code}" == "int"     ]]; then
+              printf "\n ${__crt__txtred}%s${__crt__txtrst} " 'SIGINT'
+            elif [[ "${code}" == "skip"    ]]; then
+              printf "\n ${__crt__txtylw}%s${__crt__txtrst} " ' SKIP '
+            elif [[ "${code}" == "0"       ]]; then
+              printf "\n ${__crt__txtgrn}%s${__crt__txtrst} " '  OK  '
+            else
+              printf "\n ${__crt__txtred}%s${__crt__txtrst} " 'FAILED'
             fi
             printf "%s" "${__crt__names[${index}]}"
-            if [[ -n "${meta}" ]]; then printf " ${__crt__txtbld}%s${__crt__txtrst}" "${meta}"
+            if [[ -n "${meta}" ]]; then
+              printf " ${__crt__txtbld}%s${__crt__txtrst}" "${meta}"
             fi
             tput el  # clear to the end of the line in case the task previously displayed was longer
         }
@@ -1587,9 +1622,15 @@ concurrent() (
             local failure
             local skipped
             local interrupted
-            [[ "${__crt__failure_task_count}"     -eq 0 ]] || failure="  ${__crt__failure_task_count} failed"
-            [[ "${__crt__skipped_task_count}"     -eq 0 ]] || skipped="  ${__crt__skipped_task_count} skipped"
-            [[ "${__crt__interrupted_task_count}" -eq 0 ]] || interrupted="  ${__crt__interrupted_task_count} interrupted"
+            [[ "${__crt__failure_task_count}"     -eq 0 ]] || {
+              failure="  ${__crt__failure_task_count} failed"
+            }
+            [[ "${__crt__skipped_task_count}"     -eq 0 ]] || {
+              skipped="  ${__crt__skipped_task_count} skipped"
+            }
+            [[ "${__crt__interrupted_task_count}" -eq 0 ]] || {
+              interrupted="  ${__crt__interrupted_task_count} interrupted"
+            }
             printf " %3d%% %s%s%s%s\n\n" \
                 "${percent}" \
                 "${success}" \
@@ -1642,11 +1683,15 @@ concurrent() (
 
         __crt__draw_task() {
             local code=${1}
-            if   [[ "${code}" == "running" ]]; then __crt__draw_running_status
-            elif [[ "${code}" == "int"     ]]; then printf " ${__crt__txtred}%s${__crt__txtrst} " 'SIGINT'
-            elif [[ "${code}" == "skip"    ]]; then printf " ${__crt__txtylw}%s${__crt__txtrst} " ' SKIP '
-            elif [[ "${code}" == "0"       ]]; then printf " ${__crt__txtgrn}%s${__crt__txtrst} " '  OK  '
-            else                                    printf " ${__crt__txtred}%s${__crt__txtrst} " 'FAILED'
+            if [[ "${code}" == "running" ]]; then __crt__draw_running_status
+            elif [[ "${code}" == "int"     ]]; then
+              printf " ${__crt__txtred}%s${__crt__txtrst} " 'SIGINT'
+            elif [[ "${code}" == "skip"    ]]; then
+              printf " ${__crt__txtylw}%s${__crt__txtrst} " ' SKIP '
+            elif [[ "${code}" == "0"       ]]; then
+              printf " ${__crt__txtgrn}%s${__crt__txtrst} " '  OK  '
+            else
+              printf " ${__crt__txtred}%s${__crt__txtrst} " 'FAILED'
             fi
         }
 
@@ -1768,7 +1813,10 @@ concurrent() (
     export CONCURRENT_LOG_DIR=${CONCURRENT_LOG_DIR:-${PWD}/.logs/$(date +'%F@%T')}
     #mkdir -p "${CONCURRENT_LOG_DIR}"
 
-    __crt__disable_echo || Debug::Message 'error' 'Must be run in the foreground of an interactive shell!'
+    __crt__disable_echo || {
+      Debug::Message 'error' \
+        'Must be run in the foreground of an interactive shell!'
+    }
     __crt__status_dir=$(mktemp -d "${TMPDIR:-/tmp}/concurrent.lib.sh.XXXXXXXXXXX")
     __crt__event_pipe="${__crt__status_dir}/event-pipe"
     __crt__clear_event_pipe
@@ -1790,6 +1838,7 @@ concurrent() (
 
 # Make sure BASH meets version requirements
 String::Version.atleast "${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}" '4.2' || {
-  Debug::Message 'error' "lib-bash requires BASH 4.2+, you have: ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"
+  Debug::Message 'error' \
+    "lib-bash requires BASH 4.2+, you have: ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}"
   exit 1
 }

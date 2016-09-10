@@ -247,10 +247,13 @@ Cpu::Architecture() {
 Cpu::AddressSpace() {
   local AddressSpace
 
-  AddressSpace=$(
-    getconf LONG_BIT |
-      grep --max-count 1 --only-matching --extended-regex '8|16|32|64|128'
-  )
+  AddressSpace=$(getconf LONG_BIT)
+  AddressSpace="${AddressSpace//[^0-9]/}"
+
+  if [[ ! "${AddressSpace}" == @('8'|'16'|'32'|'64'|'128') ]] ; then
+    Log::Message 'error' 'Could not find cpu word size'
+    return 1
+  fi
 
   Var::Type.integer "${AddressSpace}"
 

@@ -485,17 +485,13 @@ Math::RoundFloat() {
   # Make sure not to fail if num is already an integer
   if Var::Type.integer "${Float}" 2>&- ; then
     echo "${Float}"
+    return 0
   fi
 
   Var::Type.float "${Float}"
 
   # Rounds float to the nearest whole number
-  FloatRounded=$(
-    printf %.0f $(
-      echo ${Float} |
-      bc -l
-    )
-  )
+  FloatRounded=$(printf %.0f $(echo "${Float}" | bc -l))
 
   echo "${FloatRounded}"
 }

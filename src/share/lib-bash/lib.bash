@@ -45,7 +45,7 @@ set -o functrace
 #set -o nounset
 set -o pipefail
 
-LOG_LEVEL="${LOG_LEVEL:-OFF}"
+LOG_LEVEL="${LOG_LEVEL:-info}"
 
 Main::Name() {
   if [ -n "${PROGRAM_NAME}" ] ; then
@@ -424,23 +424,40 @@ Log::Func() {
 # $2 - Message
 # $3 - override name of function returned in message
 Log::Message() {
+  local Descriptor
   local Func="${3}"
   local Level="${1}"
+  local -A LogLevel
   local Message="${2}"
 
-  if [[ ! "${Level}" == @('trace'|'debug'|'info'|'warn'|'error'|'fatal') ]] ; then
-    echo "$(Main::Name) [error] ${FUNCNAME}: invalid debug level: ${Level}" 1>&2
+  LogLevel=(
+    ['off']='0'
+    ['fatal']='1'
+    ['error']='2'
+    ['warn']='3'
+    ['info']='4'
+    ['debug']='5'
+    ['trace']='6'
+  )
+
+  if ! Var::Type.integer "${LogLevel[${Level}]}" 2>&- ; then
+    echo "$(Main::Name) [error] ${FUNCNAME}: invalid debug level: ${Level}" >&2
+    return 1
   fi
 
   Var::Type.string "${Message}"
 
-  if ! Var::Type.string "${Func}" 2> /dev/null ; then
+  if ! Var::Type.string "${Func}" 2>&- ; then
     Func="${FUNCNAME[1]}"
   fi
 
-  # FIXME: respect log level hierarchy
-  if [ "${LOG_LEVEL}" != 'OFF' ] ; then
-    echo "$(Main::Name) [${Level}] ${Func}: ${Message}" 1>&2
+  # File descriptor to use
+  if [ "${LogLevel[${Level}]}" -lt "${LogLevel[info]}" ] ; then
+    Descriptor='2'
+  fi
+
+  if [ "${LogLevel[${Level}]}" -le "${LogLevel[${LOG_LEVEL}]}" ] ; then
+    echo "$(Main::Name) [${Level}] ${Func}: ${Message}" >&${Descriptor:-1}
   fi
 }
 

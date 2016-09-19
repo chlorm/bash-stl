@@ -414,7 +414,7 @@ Log::Func() {
   # inherited by shell functions, command substitutions, and commands
   # executed in a subshell environment.
 
-  if [ "${LOG_LEVEL}" == @('debug'|'trace') ] ; then
+  if [[ "${LOG_LEVEL}" == @('debug'|'trace') ]] ; then
     Log::Message 'debug' "${BASH_COMMAND}" "${FUNCNAME[1]}"
   fi
 }

@@ -716,8 +716,6 @@ User::Root() { [ $(id -u) -eq 0 ] ; }
 Var::Type() {
   local Var="${1}"
 
-  [ -n "${Var}" ]
-
   if [[ ${Var} =~ ^-?[0-9]+\.[0-9]+$ ]] ; then
     echo 'float'
   elif [[ ${Var} =~ ^-?[0-9]+$ ]] ; then
@@ -736,8 +734,6 @@ Var::Type.boolean() {
   local Type
   local Var="${1}"
 
-  [ -n "${Var}" ]
-
   Type="$(Var::Type "${Var}")"
 
   [ "${Type}" == 'boolean' ] || {
@@ -752,8 +748,6 @@ Var::Type.boolean() {
 Var::Type.float() {
   local Type
   local Var="${1}"
-
-  [ -n "${Var}" ]
 
   Type="$(Var::Type "${Var}")"
 
@@ -770,8 +764,6 @@ Var::Type.integer() {
   local Type
   local Var="${1}"
 
-  [ -n "${Var}" ]
-
   Type="$(Var::Type "${Var}")"
 
   [ "${Type}" == 'integer' ] || {
@@ -787,8 +779,6 @@ Var::Type.null() {
   local Type
   local Var="${1}"
 
-  [ -n "${Var}" ]
-
   Type="$(Var::Type "${Var}")"
 
   [ "${Type}" == 'null' ] || {
@@ -803,8 +793,6 @@ Var::Type.null() {
 Var::Type.string() {
   local Type
   local Var="${1}"
-
-  [ -n "${Var}" ]
 
   Type="$(Var::Type "${Var}")"
 

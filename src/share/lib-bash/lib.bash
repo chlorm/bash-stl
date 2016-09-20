@@ -598,7 +598,7 @@ OS::Linux() {
         } else if (/centos/) {
           print "centos"
         } else if (/debian/) {
-          print "debian
+          print "debian"
         } else if (/fedora/) {
           print "fedora"
         } else if (/gentoo/) {

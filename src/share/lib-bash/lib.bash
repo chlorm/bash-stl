@@ -258,10 +258,10 @@ Cpu::Architecture() {
 Cpu::AddressSpace() {
   local AddressSpace
 
-  AddressSpace=$(getconf LONG_BIT)
-  AddressSpace="${AddressSpace//[^0-9]/}"
+  AddressSpace="$(getconf LONG_BIT)"
+  AddressSpace=${AddressSpace//[^0-9]/}
 
-  if [[ ! "${AddressSpace}" == @('8'|'16'|'32'|'64'|'128') ]] ; then
+  if [[ ! "${AddressSpace}" == @(8|16|32|64|128) ]] ; then
     Log::Message 'error' 'Could not find cpu word size'
     return 1
   fi
@@ -279,7 +279,7 @@ Cpu::Sockets() {
     'linux') Sockets="$(lscpu | awk -F: '/Socket\(s\)/ {print $2;exit}')" ;;
   esac
 
-  Sockets="${Sockets//[^0-9]/}"
+  Sockets=${Sockets//[^0-9]/}
 
   if [ ! ${Sockets} -ge 1 ] ; then
     # Assume a socket exists even if it fails to find any
@@ -298,13 +298,14 @@ Cpu::Physical() {
 
   case "$(OS::Kernel)" in
     'linux')
-      CpuCores=$(lscpu | awk -F: '/Core\(s\) per socket/ {print $2;exit}') ;;
+      CpuCores="$(lscpu | awk -F: '/Core\(s\) per socket/ {print $2;exit}')" ;;
     'darwin')
-      CpuCores=$(sysctl hw | awk -F: '/hw.physicalcpu/ {print $2;exit}') ;;
-    'cygwin') CpuCores=$(NUMBER_OF_PROCESSORS) ;;
+      CpuCores="$(sysctl hw | awk -F: '/hw.physicalcpu/ {print $2;exit}')" ;;
+    'cygwin')
+      CpuCores=$(NUMBER_OF_PROCESSORS) ;;
   esac
 
-  CpuCores="${CpuCores//[^0-9]/}"
+  CpuCores=${CpuCores//[^0-9]/}
 
   if [ -z "${CpuCores}" ] ; then
     CpuCores=1
@@ -322,21 +323,21 @@ Cpu::Logical() {
 
   local CpuThreads
 
-  case $(OS::Kernel) in
+  case "$(OS::Kernel)" in
     'linux'|'freebsd')
       # Finds number of logical threads per physical core
-      CpuThreads=$(lscpu | awk -F: '/Thread\(s\) per core/ {print $2;exit}')
-      CpuThreads="${CpuThreads//[^0-9]/}"
+      CpuThreads="$(lscpu | awk -F: '/Thread\(s\) per core/ {print $2;exit}')"
+      CpuThreads=${CpuThreads//[^0-9]/}
       if [ -n "${CpuThreads}" ] ; then
         # Convert to number of threads per cpu
         CpuThreads=$(( ${CpuThreads} * $(Cpu::Physical) ))
       fi
       ;;
     'darwin')
-      CpuThreads=$(sysctl hw | awk -F: '/hw.logicalcpu/ {print $2;exit}') ;;
+      CpuThreads="$(sysctl hw | awk -F: '/hw.logicalcpu/ {print $2;exit}')" ;;
   esac
 
-  CpuThreads="${CpuThreads//[^0-9]/}"
+  CpuThreads=${CpuThreads//[^0-9]/}
 
   if [ -z "${CpuThreads}" ] ; then
     CpuThreads=$(Cpu::Physical)
@@ -357,7 +358,7 @@ Directory::Create() {
     fi
     # Create directory
     if [ ! -d "${1}" ] ; then
-      mkdir -p "${1}" 1>&2
+      mkdir --parents "${1}" 1>&2
     fi
     shift
   done
@@ -371,7 +372,7 @@ Directory::Remove() {
     fi
     # Remove directory
     if [ -d "${1}" ] ; then
-      rm -rf "${1}" 1>&2
+      rm --recursive --force "${1}" 1>&2
     fi
     shift
   done
@@ -414,7 +415,7 @@ File::Remove() {
     fi
     # Remove file
     if [ -f "${1}" ] ; then
-      rm -f "${1}" 1>&2
+      rm --force "${1}" 1>&2
     fi
     shift
   done
@@ -439,21 +440,19 @@ Log::Func() {
 # $2 - Message
 # $3 - override name of function returned in message
 Log::Message() {
-  local Descriptor
+  local -r -i Descriptor="${DISCRIPTOR:-2}"
   local Func="${3}"
-  local Level="${1}"
-  local -A LogLevel
-  local Message="${2}"
-
-  LogLevel=(
-    ['off']='0'
-    ['fatal']='1'
-    ['error']='2'
-    ['warn']='3'
-    ['info']='4'
-    ['debug']='5'
-    ['trace']='6'
+  local -r Level="${1}"
+  local -r -A LogLevel=(
+    ['off']=0
+    ['fatal']=1
+    ['error']=2
+    ['warn']=3
+    ['info']=4
+    ['debug']=5
+    ['trace']=6
   )
+  local -r Message="${2}"
 
   if ! Var::Type.integer "${LogLevel[${Level}]}" 2>&- ; then
     echo "$(Main::Name) [error] ${FUNCNAME}: invalid debug level: ${Level}" >&2
@@ -466,19 +465,14 @@ Log::Message() {
     Func="${FUNCNAME[1]}"
   fi
 
-  # File descriptor to use
-  if [ "${LogLevel[${Level}]}" -lt "${LogLevel[info]}" ] ; then
-    Descriptor='2'
-  fi
-
-  if [ "${LogLevel[${Level}]}" -le "${LogLevel[${LOG_LEVEL}]}" ] ; then
-    echo "$(Main::Name) [${Level}] ${Func}: ${Message}" >&${Descriptor:-1}
+  if [ ${LogLevel[${Level}]} -le ${LogLevel[${LOG_LEVEL}]} ] ; then
+    echo "$(Main::Name) [${Level}] ${Func}: ${Message}" >&${Descriptor}
   fi
 }
 
 Log::Trace() {
-  local i=0
-  local x=${#BASH_LINENO[@]}
+  local -i i=0
+  local -i x=${#BASH_LINENO[@]}
 
   for ((i=x-2; i>=0; i--)) ; do
     echo '  File' \"${BASH_SOURCE[i+1]}\", line ${BASH_LINENO[i]}, in ${FUNCNAME[i+1]}
@@ -492,27 +486,27 @@ Log::Trace() {
 Math::Mode() {
   echo "${@}" |
     # Break string on spaces
-    sed -r 's/[[:space:]]+/\n/g' |
+    sed --regexp-extended 's/[[:space:]]+/\n/g' |
     # Remove duplicates
-    uniq -c |
+    uniq --count |
     # Sort the most common first
-    sort -n -k 1 -r |
+    sort --numeric-sort --key=1 --reverse |
     awk '{ print $2 ; exit }'
 }
 
 Math::Mode.count() {
   echo "${@}" |
     # Break string on spaces
-    sed -r 's/[[:space:]]+/\n/g' |
+    sed --regexp-extended 's/[[:space:]]+/\n/g' |
     # Remove duplicates
-    uniq -c |
+    uniq --count |
     # Sort the most common first
-    sort -n -k 1 -r |
+    sort --numeric-sort --key=1 --reverse |
     awk '{ print $1 ; exit }'
 }
 
 Math::RoundFloat() {
-  local Float="${1}"
+  local -r Float="${1}"
 
   # Make sure not to fail if num is already an integer
   if Var::Type.integer "${Float}" 2>&- ; then
@@ -660,7 +654,7 @@ Path::Bin() { type -P "${1}" ; }
 
 # Resolves the absolute path of a binary
 Path::Bin.abs() {
-  local IFS=:
+  local -r IFS=:
   local PossiblePath
 
   for PossiblePath in ${PATH} ; do
@@ -696,7 +690,7 @@ Prompt::PasswordConfirmation() {
 # Ask a yes or no question
 Prompt::YorN() {
   local Answer
-  local Default=2
+  local -i Default=2
   local Prompt
 
   case "${2}" in
@@ -725,15 +719,14 @@ Prompt::YorN() {
 String::LowerCase() { echo ${@,,} ; }
 String::LowerCase.left() { echo ${@,} ; }
 String::LowerCase.custom() {
-  local regex
-  regex="${1}" ; shift
+  local -r regex="${1}" ; shift
   echo ${@,,[${regex}]}
 }
 String::LowerCase.var() { declare -l ${1} ; }
 String::UpperCase() { echo ${@^^} ; }
 String::UpperCase.left() { echo ${@^} ; }
 String::UpperCase.custom() {
-  local regex="${1}" ; shift
+  local -r regex="${1}" ; shift
   echo ${@^^[${regex}]}
 }
 String::UpperCase.custom() { declare -u ${1} ; }
@@ -744,8 +737,10 @@ String::Version() {
   if [ "${1}" == "${2}" ] ; then
     echo 'eq' ; return 0
   fi
-  local IFS=.
-  local i ver1=(${1}) ver2=(${2})
+  local -r IFS=.
+  local -i i
+  local -a ver1=(${1})
+  local -a ver2=(${2})
   # fill empty fields in ver1 with zeros
   for ((i=${#ver1[@]}; i<${#ver2[@]}; i++)) ; do
       ver1[i]=0
@@ -775,9 +770,9 @@ Symlink::Create() {
   Directory::Create "$(dirname "${2}")"
   # Ignore if a symlink already exists and points to the correct location.
   if [ "$(readlink -f "${2}")" != "${1}" ] ; then
-    rm -rf "${2}"
+    rm --recursive --force "${2}"
     [ -e "${1}" ]
-    ln -sf "${1}" "${2}"
+    ln --symbolic --force "${1}" "${2}"
   fi
 }
 
@@ -788,9 +783,9 @@ User::Root() { [ $(id -u) -eq 0 ] ; }
 
 ##################################### Var ######################################
 
-# Detects variable type
+# Detect variable type
 Var::Type() {
-  local Var="${1}"
+  local -r Var="${1}"
 
   if [[ ${Var} =~ ^-?[0-9]+\.[0-9]+$ ]] ; then
     echo 'float'
@@ -805,10 +800,10 @@ Var::Type() {
   fi
 }
 
-# Detects if variable type is boolean
+# Detect if variable type is boolean
 Var::Type.boolean() {
   local Type
-  local Var="${1}"
+  local -r Var="${1}"
 
   Type="$(Var::Type "${Var}")"
 
@@ -820,10 +815,10 @@ Var::Type.boolean() {
   }
 }
 
-# Detects if variable type is floating point
+# Detect if variable type is floating point
 Var::Type.float() {
   local Type
-  local Var="${1}"
+  local -r Var="${1}"
 
   Type="$(Var::Type "${Var}")"
 
@@ -835,10 +830,10 @@ Var::Type.float() {
   }
 }
 
-# Detects if variable type is integer
+# Detect if variable type is integer
 Var::Type.integer() {
   local Type
-  local Var="${1}"
+  local -r Var="${1}"
 
   Type="$(Var::Type "${Var}")"
 
@@ -850,10 +845,10 @@ Var::Type.integer() {
   }
 }
 
-# Detects if variable type is null
+# Detect if variable type is null
 Var::Type.null() {
   local Type
-  local Var="${1}"
+  local -r Var="${1}"
 
   Type="$(Var::Type "${Var}")"
 
@@ -865,10 +860,10 @@ Var::Type.null() {
   }
 }
 
-# Detects if variable type is string
+# Detect if variable type is string
 Var::Type.string() {
   local Type
-  local Var="${1}"
+  local -r Var="${1}"
 
   Type="$(Var::Type "${Var}")"
 
@@ -911,7 +906,7 @@ Var::Type.string() {
 # This fork'd version focuses on making concurrent usable without a TUI.
 
 # TODO:
-# - Port logging to Logging::
+# - Port logging to Log::
 #   - disable logging be default
 # - Make TUI optional
 # - Fix file arg passing.

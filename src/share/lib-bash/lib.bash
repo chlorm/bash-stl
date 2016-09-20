@@ -312,7 +312,8 @@ Cpu::Logical() {
   case $(OS::Kernel) in
     'linux'|'freebsd')
       # Finds number of logical threads per physical core
-      CpuThreads=$(lscpu | grep --max-count 1 'Thread(s) per core:')
+      CpuThreads=$(lscpu | awk -F: '/Thread\(s\) per core/ {print $2;exit}')
+      CpuThreads="${CpuThreads//[^0-9]/}"
       if [ -n "${CpuThreads}" ] ; then
         # Convert to number of threads per cpu
         CpuThreads=$(( ${CpuThreads} * $(Cpu::Physical) ))

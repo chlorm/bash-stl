@@ -184,7 +184,7 @@ while getopts ":${GetOptsArgumentString}" arg ; do
   case "\${arg}" in
     # Substitute actions for different variables
     ${GetOptsCaseStatements}
-    :) echo "Option - \${OPTARG} requires an argument" ; exit 1 ;;
+    :) Log::Message 'error' "Option \\\`-\${OPTARG}' requires an argument" 'Args::Build' ; exit 1 ;;
     *) ${Name}::Usage ; exit 1 ;;
   esac
 done

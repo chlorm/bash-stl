@@ -233,7 +233,18 @@ Cpu::Architecture() {
     'linux')
       Architecture="$(
         lscpu |
-          grep --max-count 1 --only-matching --extended-regex 'arm|i686|x86_64'
+          awk '{
+            if (/x86_64/) {
+              print "x86_64"
+            } else if (/i686/) {
+              print "i686"
+            } else if (/power/) {
+              print "power"
+            } else if (/arm/) {
+              print "arm"
+            }
+            exit
+          }'
       )"
       ;;
   esac
@@ -265,7 +276,7 @@ Cpu::Sockets() {
 
   case "$(OS::Kernel)" in
     'darwin') Sockets=1 ;;
-    'linux') Sockets="$(lscpu | grep --max-count 1 'Socket(s):')" ;;
+    'linux') Sockets="$(lscpu | awk -F: '/Socket\(s\)/ {print $2;exit}')" ;;
   esac
 
   Sockets="${Sockets//[^0-9]/}"
@@ -286,8 +297,10 @@ Cpu::Physical() {
   local CpuCores
 
   case "$(OS::Kernel)" in
-    'linux') CpuCores=$(lscpu | grep --max-count 1 'Core(s) per socket:') ;;
-    'darwin') CpuCores=$(sysctl hw | grep --max-count 1 'hw.physicalcpu:') ;;
+    'linux')
+      CpuCores=$(lscpu | awk -F: '/Core\(s\) per socket/ {print $2;exit}') ;;
+    'darwin')
+      CpuCores=$(sysctl hw | awk -F: '/hw.physicalcpu/ {print $2;exit}') ;;
     'cygwin') CpuCores=$(NUMBER_OF_PROCESSORS) ;;
   esac
 
@@ -319,7 +332,8 @@ Cpu::Logical() {
         CpuThreads=$(( ${CpuThreads} * $(Cpu::Physical) ))
       fi
       ;;
-    'darwin') CpuThreads=$(sysctl hw | grep --max-count 1 "hw.logicalcpu:") ;;
+    'darwin')
+      CpuThreads=$(sysctl hw | awk -F: '/hw.logicalcpu/ {print $2;exit}') ;;
   esac
 
   CpuThreads="${CpuThreads//[^0-9]/}"
@@ -524,50 +538,94 @@ Math::RoundFloat() {
 
 #OS::Endianness
 
-OS::Kernel.proc() { cat /proc/version 2>&- ; }
-
-OS::Kernel.ostype() { echo "${OSTYPE}" 2>&- ; }
-
-OS::Kernel.uname() { uname -s 2>&- ; }
-
 # Find host os kernel
 OS::Kernel() {
   local Kernel
+  local KernelStrings
+  local ProcVersion
+  local Uname
 
-  Kernel=$(
-    String::LowerCase "$(OS::Kernel.proc) $(OS::Kernel.ostype) $(OS::Kernel.uname)" |
-      grep --max-count 1 --only-matching --extended-regex \
-        'microsoft|cygwin|darwin|freebsd|linux' |
-      head -1
-  )
+  ProcVersion="$(cat /proc/version 2>&-)"
+  Uname="$(uname -s 2>&-)"
 
-  if [ "${Kernel}" == 'microsoft' ] ; then
-    Kernel='windows'
-  fi
+  # $ProcVersion must come first to correctly detect MS Win Sub Linux
+  KernelStrings="$(String::LowerCase "${ProcVersion} ${OSTYPE} ${Uname}")"
+
+  Kernel="$(
+    echo "${KernelStrings}" |
+      awk '{
+        if (/linux/) {
+          print "linux"
+        } else if (/freebsd/) {
+          print "freebsd"
+        } else if (/solaris/) {
+          print "solaris"
+        } else if (/microsoft/) {
+          # Microsoft Windows Subsystem for Linux
+          print "windows"
+        } else if (/cygwin/) {
+          print "cygwin"
+        } else if (/darwin/) {
+          print "darwin"
+        }
+        exit
+      }'
+  )"
 
   Var::Type.string "${Kernel}"
 
   echo "${Kernel}"
 }
 
-# Find linux distro via /etc/*-release
-OS::Linux.release() { cat ${ROOT:-}/etc/*-release 2>&- ; }
-# Find linux distro via uname -a
-OS::Linux.uname() { uname -a 2>&- ; }
-# Find linux distro via linux standard base
-OS::Linux.lsb() { lsb_release -a 2>&- ; }
 # Take first result of linux os name match
 OS::Linux() {
   [ "$(OS::Kernel)" == 'linux' ]
 
+  local EtcRelease
   local Linux
+  local LinuxStrings
+  local LsbRelease
+  local Uname
+
+  # Find linux distro via /etc/*-release
+  EtcRelease="$(cat ${ROOT:-}/etc/*-release 2>&-)"
+  # Find linux distro via linux standard base
+  LsbRelease="$(lsb_release -a 2>&-)"
+  # Find linux distro via uname -a
+  Uname="$(uname -a 2>&-)"
+
+  LinuxStrings="$(String::LowerCase "${EtcRelease} ${Uname} ${LsbRelease}")"
 
   Linux="$(
-    String::LowerCase \
-      "$(OS::Linux.release) $(OS::Linux.uname) $(OS::Linux.lsb)" |
-      grep --only-matching --extended-regex \
-        'arch|centos|debian|fedora|gentoo|nixos|opensuse|red hat|slackware|suse|triton|ubuntu' |
-      head -1
+    echo "${LinuxStrings}" |
+      awk '{
+        if (/arch/) {
+          print "arch"
+        } else if (/centos/) {
+          print "centos"
+        } else if (/debian/) {
+          print "debian
+        } else if (/fedora/) {
+          print "fedora"
+        } else if (/gentoo/) {
+          print "gentoo"
+        } else if (/nixos/) {
+          print "nixos"
+        } else if (/opensuse/) {
+          print "opensuse"
+        } else if (/red hat/) {
+          print "red hat"
+        } else if (/slackware/) {
+          print "slackware"
+        } else if (/suse/) {
+          print "suse"
+        } else if (/triton/) {
+          print "triton"
+        } else if (/ubuntu/) {
+          print "ubuntu"
+        }
+        exit
+      }'
   )"
 
   Var::Type.string "${Linux}"

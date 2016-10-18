@@ -48,6 +48,7 @@ set -o pipefail
 LOG_LEVEL="${LOG_LEVEL:-info}"
 
 Main::Name() {
+  Function::RequiredArgs '0' "$#"
   if [ -n "${PROGRAM_NAME}" ] ; then
     echo "${PROGRAM_NAME}"
   else
@@ -218,6 +219,7 @@ EOF
 
 # Return CPU architecture without endianness or address space size
 Cpu::Architecture() {
+  Function::RequiredArgs '0' "$#"
   # Do NOT use `uname -m' to achieve this functionality.
   local Architecture
 
@@ -256,6 +258,7 @@ Cpu::Architecture() {
 
 # Find CPU address space size (ie. 32bit/64bit)
 Cpu::AddressSpace() {
+  Function::RequiredArgs '0' "$#"
   local AddressSpace
 
   AddressSpace="$(getconf LONG_BIT)"
@@ -272,6 +275,7 @@ Cpu::AddressSpace() {
 }
 
 Cpu::Sockets() {
+  Function::RequiredArgs '0' "$#"
   local Sockets
 
   case "$(OS::Kernel)" in
@@ -291,6 +295,7 @@ Cpu::Sockets() {
 
 # Find number of physical cpu cores
 Cpu::Physical() {
+  Function::RequiredArgs '0' "$#"
   # Assumes all sockets are identical, only some arm platforms
   # won't work with this logic.
 
@@ -318,6 +323,7 @@ Cpu::Physical() {
 
 # Find number of logical cpu cores
 Cpu::Logical() {
+  Function::RequiredArgs '0' "$#"
   # Assumes all sockets are identical, only some arm platforms won't
   # work with this logic
 
@@ -351,6 +357,7 @@ Cpu::Logical() {
 ################################## Directory ###################################
 
 Directory::Create() {
+  Function::RequiredArgs '1' "$#"
   while [ "${1}" ] ; do
     # Make sure directory is not a symlink
     if [ -L "${1}" ] ; then
@@ -365,6 +372,7 @@ Directory::Create() {
 }
 
 Directory::Remove() {
+  Function::RequiredArgs '1' "$#"
   while [ "${1}" ] ; do
     # Make sure directory is not a symlink
     if [ -L "${1}" ] ; then
@@ -394,6 +402,7 @@ Download::Http() {
 ##################################### File #####################################
 
 File::Create() {
+  Function::RequiredArgs '1' "$#"
   while [ "${1}" ] ; do
     # Make sure file is not a symlink
     if [ -L "${1}" ] ; then
@@ -408,6 +417,7 @@ File::Create() {
 }
 
 File::Remove() {
+  Function::RequiredArgs '1' "$#"
   while [ "${1}" ] ; do
     # Make sure file is not a symlink
     if [ -L "${1}" ] ; then
@@ -421,11 +431,32 @@ File::Remove() {
   done
 }
 
+################################### Function ###################################
+
+Function::RequiredArgs() {
+  local ArgsExpected=${1}
+  local ArgsRecieved=${2}
+  local ArgsNumber=$#
+  local Plural
+  if [ ! ${ArgsNumber} == 2 ] ; then
+    Log::Message 'error' "expected \`2' arguments, but recieved \`${ArgsNumber}'"
+    return 1
+  fi
+  Plural="$(if [ ${ArgsExpected} -gt 1 ] ; then echo 's' ; fi)"
+  if [ ${ArgsExpected} -ne ${ArgsRecieved} ] ; then
+    Log::Message 'error' \
+        "expected \`${ArgsExpected}' argument${Plural}, but recieved \`${ArgsRecieved}'" \
+        "${FUNCNAME[1]}"
+    return 1
+  fi
+}
+
 #################################### Log #####################################
 
 # Print a debug message with the current function and command executed
 # Usage: add `set -o functrace` & `trap 'Log::Message' DEBUG`
 Log::Func() {
+  Function::RequiredArgs '0' "$#"
   # Requires `set -o functrace` to allow traps on DEBUG & RETURN to be
   # inherited by shell functions, command substitutions, and commands
   # executed in a subshell environment.
@@ -440,6 +471,7 @@ Log::Func() {
 # $2 - Message
 # $3 - override name of function returned in message
 Log::Message() {
+  [[ $# == @(2|3) ]]
   local -r -i Descriptor="${DISCRIPTOR:-2}"
   local Func="${3}"
   local -r Level="${1}"
@@ -471,6 +503,7 @@ Log::Message() {
 }
 
 Log::Trace() {
+  Function::RequiredArgs '0' "$#"
   local -i i=0
   local -i x=${#BASH_LINENO[@]}
 
@@ -506,6 +539,7 @@ Math::Mode.count() {
 }
 
 Math::RoundFloat() {
+  Function::RequiredArgs '1' "$#"
   local -r Float="${1}"
 
   # Make sure not to fail if num is already an integer
@@ -534,6 +568,7 @@ Math::RoundFloat() {
 
 # Find host os kernel
 OS::Kernel() {
+  Function::RequiredArgs '0' "$#"
   local Kernel
   local KernelStrings
   local ProcVersion
@@ -573,6 +608,7 @@ OS::Kernel() {
 
 # Take first result of linux os name match
 OS::Linux() {
+  Function::RequiredArgs '0' "$#"
   [ "$(OS::Kernel)" == 'linux' ]
 
   local EtcRelease
@@ -631,6 +667,7 @@ OS::Linux() {
 
 # Add direcory to $PATH
 Path::Add() {
+  Function::RequiredArgs '1' "$#"
   [ -d "${1}" ]
   if [ -z "$(echo "${PATH}" | grep "${1}" 2>&-)" ] ; then
     export PATH="${PATH}:${1}"
@@ -639,6 +676,7 @@ Path::Add() {
 
 # Remove directory from $PATH
 Path::Remove() {
+  Function::RequiredArgs '1' "$#"
   if [ -n "$(echo "${PATH}" | grep "${1}" 2>&-)" ] ; then
     export PATH="$(
       echo -n $PATH |
@@ -649,10 +687,11 @@ Path::Remove() {
 }
 
 # Finds the path to the binary
-Path::Bin() { type -P "${1}" ; }
+Path::Bin() { Function::RequiredArgs '1' "$#" ; type -P "${1}" ; }
 
 # Resolves the absolute path of a binary
 Path::Bin.abs() {
+  Function::RequiredArgs '1' "$#"
   local -r IFS=:
   local PossiblePath
 
@@ -667,11 +706,12 @@ Path::Bin.abs() {
 }
 
 # Test to see if a binary exists in the path
-Path::Check() { type "${1}" > /dev/null 2>&1 ; }
+Path::Check() { Function::RequiredArgs '1' "$#" ; type "${1}" > /dev/null 2>&1 ; }
 
 #################################### Prompt ####################################
 
 Prompt::PasswordConfirmation() {
+  Function::RequiredArgs '0' "$#"
   local Pass1 Pass2
 
   while true ; do
@@ -732,7 +772,7 @@ String::UpperCase.custom() { declare -u ${1} ; }
 String::InverseCase()  { echo ${@~~} ; }
 String::InverseCase.first()  { echo ${@~} ; }
 String::Version() {
-  [ $# -eq 2 ]
+  Function::RequiredArgs '2' "$#"
   if [ "${1}" == "${2}" ] ; then
     echo 'eq' ; return 0
   fi
@@ -766,6 +806,7 @@ String::Version.lesser() { [[ "$(String::Version "${1}" "${2}")" == 'lt' ]] ; }
 
 # Create a symlink from $1 -> $2
 Symlink::Create() {
+  Function::RequiredArgs '2' "$#"
   Directory::Create "$(dirname "${2}")"
   # Ignore if a symlink already exists and points to the correct location.
   if [ "$(readlink -f "${2}")" != "${1}" ] ; then
@@ -784,6 +825,7 @@ User::Root() { [ $(id -u) -eq 0 ] ; }
 
 # Detect variable type
 Var::Type() {
+  Function::RequiredArgs '1' "$#"
   local -r Var="${1}"
 
   if [[ ${Var} =~ ^-?[0-9]+\.[0-9]+$ ]] ; then
@@ -801,6 +843,7 @@ Var::Type() {
 
 # Detect if variable type is boolean
 Var::Type.boolean() {
+  Function::RequiredArgs '1' "$#"
   local Type
   local -r Var="${1}"
 
@@ -816,6 +859,7 @@ Var::Type.boolean() {
 
 # Detect if variable type is floating point
 Var::Type.float() {
+  Function::RequiredArgs '1' "$#"
   local Type
   local -r Var="${1}"
 
@@ -831,6 +875,7 @@ Var::Type.float() {
 
 # Detect if variable type is integer
 Var::Type.integer() {
+  Function::RequiredArgs '1' "$#"
   local Type
   local -r Var="${1}"
 
@@ -846,6 +891,7 @@ Var::Type.integer() {
 
 # Detect if variable type is null
 Var::Type.null() {
+  Function::RequiredArgs '1' "$#"
   local Type
   local -r Var="${1}"
 
@@ -861,6 +907,7 @@ Var::Type.null() {
 
 # Detect if variable type is string
 Var::Type.string() {
+  Function::RequiredArgs '1' "$#"
   local Type
   local -r Var="${1}"
 

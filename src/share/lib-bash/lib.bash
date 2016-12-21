@@ -1869,6 +1869,7 @@ concurrent() (
         __crt__status_cleanup
         __crt__stop_animation
         __crt__hide_failure wait
+        __crt__hide_failure __crt__show_cursor
         __crt__exit_by_signal INT
     }
 

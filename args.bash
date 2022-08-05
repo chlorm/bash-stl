@@ -25,7 +25,7 @@
 # default     - ''
 # value       - ''
 # variable    - ''
-stl_args_define() {
+stl_arg_define() {
     [ $# -ge 3 ]
 
     for ((i = 1; i <= $#; i++)); do

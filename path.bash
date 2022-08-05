@@ -70,7 +70,7 @@ stl_path_bin_abs() {
 }
 
 # Test to see if a binary exists in PATH
-stl_path_check() {
+stl_path_has() {
     stl_func_reqargs '1' "$#"
     type "$1" >/dev/null 2>&1
 }

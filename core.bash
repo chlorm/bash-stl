@@ -21,7 +21,7 @@ set -o pipefail
 STL_LOG_LEVEL="${STL_LOG_LEVEL:-info}"
 
 # shellcheck disable=SC2120
-stl_rogram_name() {
+stl_program_name() {
     stl_func_reqargs '0' "$#"
     local -r name="${PROGRAM_NAME:-unknown}"
     if [ "$name" != 'unknown' ]; then

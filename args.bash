@@ -35,7 +35,7 @@ stl_arg_define() {
         local value
 
         eval option="\$$i"
-        mapfile -t -d= kv < <(echo "$option")
+        mapfile -t -d= kv < <(printf '%s' "$option")
         key="${kv[0]}"
         value="${kv[1]}"
 

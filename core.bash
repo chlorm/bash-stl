@@ -18,8 +18,6 @@ set -o functrace
 set -o nounset
 set -o pipefail
 
-STL_LOG_LEVEL="${STL_LOG_LEVEL:-info}"
-
 # shellcheck disable=SC2120
 stl_program_name() {
     stl_func_reqargs '0' "$#"
@@ -70,7 +68,7 @@ stl_log_func() {
     # inherited by shell functions, command substitutions, and commands
     # executed in a subshell environment.
 
-    if [ "$stl_LOG_LEVEL" == 'trace' ]; then
+    if [ "${STL_LOG_LEVEL:-info}" == 'trace' ]; then
         stl_log_debug "$BASH_COMMAND"
     fi
 }
@@ -105,7 +103,7 @@ stl_log_impl() {
 
     stl_type_str "$errorMessage"
 
-    if [ ${levels[$level]} -le ${levels[$STL_LOG_LEVEL]} ]; then
+    if [ ${levels[$level]} -le ${levels[${STL_LOG_LEVEL:-info}]} ]; then
         printf '%s [%s] %s: %s\n' \
             "$(stl_program_name)" \
             "$level" \

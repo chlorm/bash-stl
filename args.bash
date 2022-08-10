@@ -64,24 +64,25 @@ stl_arg_define() {
     stl_type_str "$long"
 
     # Usage message
-    ArgsUsage="$ArgsUsage${ArgsUsage:+#NL}    $short $(printf '%-12s %s' "$long:" "$desc")${default:+ [default:$default]}"
+    default="${default:-}"
+    ArgsUsage="${ArgsUsage:-}${ArgsUsage:+#NL}    $short $(printf '%-12s %s' "$long:" "$desc")${default:+ [default:$default]}"
     # Translate long options to short options
-    ArgsCaseStatements="$ArgsCaseStatements#NL#TB#TB$long)#NL#TB#TB#TBparams=\"\$params $short\";;"
+    ArgsCaseStatements="${ArgsCaseStatements:-}#NL#TB#TB$long)#NL#TB#TB#TBparams=\"\$params $short\";;"
 
     # Default
     if [ -n "${default}" ]; then
-        ArgDefaults="$ArgDefaults#NL$variable=$default"
+        ArgDefaults="${ArgDefaults:-}#NL$variable=$default"
     fi
 
     stl_args_req_input() {
-        if stl_type_null "$boolean" 2>&- && stl_type_str "$variable" 2>&-; then
+        if stl_type_null "${boolean:-}" 2>&- && stl_type_str "$variable" 2>&-; then
             echo ":"
         fi
     }
 
     # GetOpts arguments
-    GetOptsArgumentString="$GetOptsArgumentString $shortname$(stl_args_req_input)"
-    GetOptsCaseStatements="$GetOptsCaseStatements#NL$shortname)#NL$variable=\"\$OPTARG\";;"
+    GetOptsArgumentString="${GetOptsArgumentString:-} $shortname$(stl_args_req_input)"
+    GetOptsCaseStatements="${GetOptsCaseStatements:-}#NL$shortname)#NL$variable=\"\$OPTARG\";;"
 }
 
 # FIXME: if long flag is used return long flag in error message
@@ -139,7 +140,7 @@ done
 eval set -- "\$params"
 
 # Set default variable values
-${ArgDefaults}
+${ArgDefaults:-}
 
 # Process using getopts
 while getopts ":${GetOptsArgumentString}" arg ; do

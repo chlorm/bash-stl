@@ -97,7 +97,7 @@ stl_log_impl() {
 
     if ! stl_type_int "${levels[$level]}" 2>&-; then
         printf '%s [error] %s: invalid debug level: %s\n' \
-            "$(stl_rogram_name)" \
+            "$(stl_program_name)" \
             "$FUNCNAME" \
             "$level" >&$descriptor
         return 1
@@ -107,7 +107,7 @@ stl_log_impl() {
 
     if [ ${levels[$level]} -le ${levels[$STL_LOG_LEVEL]} ]; then
         printf '%s [%s] %s: %s\n' \
-            "$(stl_rogram_name)" \
+            "$(stl_program_name)" \
             "$level" \
             "$func" \
             "$errorMessage" >&$descriptor
